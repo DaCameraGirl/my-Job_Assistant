@@ -9,112 +9,377 @@
 <body>
   <main class="wrap">
     <h1>My Job Assistant</h1>
-    <p class="sub">Universal work assistant with interactive modules for evaluation, triage, release decisions, and search satisfaction.</p>
+    <p class="sub">Centific freelance rating tools &mdash; three task types, one place.</p>
 
-    <section class="card">
-      <h2>Module</h2>
-      <select id="moduleSelect">
-        <option value="text_eval">Text Evaluator</option>
-        <option value="task_triage">Task Triage</option>
-        <option value="release_gate">Release Gate</option>
-        <option value="search_satisfaction">Search Satisfaction Rater</option>
-      </select>
-      <p class="hint" id="moduleHint">Active module: Text Evaluator.</p>
-    </section>
+    <nav class="tabs" role="tablist">
+      <span class="tab-group-label">Centific Tasks</span>
+      <button class="tab active" data-tab="text" role="tab">&#128221; Text Evaluation</button>
+      <button class="tab" data-tab="satisfaction" role="tab">&#128269; Search Satisfaction</button>
+      <button class="tab" data-tab="broadmatch" role="tab">&#127919; Broad Match</button>
+      <span class="tab-group-label">Tools</span>
+      <button class="tab tool-tab" data-tab="triage" role="tab">&#128203; Task Triage</button>
+      <button class="tab tool-tab" data-tab="release" role="tab">&#128640; Release Gate</button>
+    </nav>
 
-    <section id="textModule" class="module-block">
-      <section class="card">
-        <h2>1) Transcript</h2>
-        <textarea id="transcript" rows="12" placeholder="Paste transcript lines, one message per line. Example: Person A: Hi"></textarea>
+    <!-- ============================================================ -->
+    <!-- TAB 1: TEXT RESPONSE EVALUATION                               -->
+    <!-- ============================================================ -->
+    <section id="tab-text" class="tab-content active">
+      <div class="section-header">
+        <h2>Text Response Evaluation</h2>
+        <p class="section-desc">Source: Text Response Evaluation &mdash; Dec 2025. Evaluate transcripts, pick the best AI response, suggest MCQ answers.</p>
+      </div>
+
+      <div class="card">
+        <h3>Step 1 &mdash; Paste Transcript</h3>
+        <p class="hint">One message per line. Format: <code>Speaker: message</code></p>
+        <textarea id="transcript" rows="10" placeholder="Person A: Hey, how are you?&#10;Person B: I'm doing great, thanks for asking!"></textarea>
+        <div class="live-check" id="transcriptCheck"></div>
         <button id="evalBtn">Evaluate Transcript</button>
-      </section>
+      </div>
 
-      <section class="card">
-        <h2>2) Candidate Responses (Optional)</h2>
+      <div class="card">
+        <h3>Step 2 &mdash; Pick Best Response <span class="optional">(optional)</span></h3>
+        <p class="hint">Paste up to 4 candidate responses. Scored against the transcript for quality and context fit.</p>
         <input id="resp1" placeholder="Response 1" />
         <input id="resp2" placeholder="Response 2" />
         <input id="resp3" placeholder="Response 3" />
         <input id="resp4" placeholder="Response 4" />
         <button id="pickBtn">Pick Best Response</button>
-      </section>
+      </div>
 
-      <section class="card">
-        <h2>3) Multiple-Choice Question (Optional)</h2>
-        <input id="mcqQ" placeholder="Question about original conversation" />
+      <div class="card">
+        <h3>Step 3 &mdash; Multiple-Choice Question <span class="optional">(optional)</span></h3>
+        <p class="hint">Enter a question and four choices. The tool suggests the best answer based on transcript context.</p>
+        <input id="mcqQ" placeholder="Question about the conversation" />
         <input id="mcqA" placeholder="Choice A" />
         <input id="mcqB" placeholder="Choice B" />
         <input id="mcqC" placeholder="Choice C" />
         <input id="mcqD" placeholder="Choice D" />
         <button id="mcqBtn">Suggest Best Answer</button>
-      </section>
+      </div>
+
+      <div class="card results-card">
+        <h3>Results</h3>
+        <div id="textResultOutput"><p class="hint muted">Fill in a transcript above and click Evaluate.</p></div>
+      </div>
     </section>
 
-    <section id="triageModule" class="module-block hidden">
-      <section class="card">
-        <h2>Task Triage</h2>
-        <input id="taskTitle" placeholder="Task title" />
-        <textarea id="taskDesc" rows="6" placeholder="Task details"></textarea>
-        <label>Urgency (1-5)</label>
-        <input id="urgency" type="number" min="1" max="5" value="3" />
-        <label>Impact (1-5)</label>
-        <input id="impact" type="number" min="1" max="5" value="3" />
-        <label>Effort (1-5, higher = harder)</label>
-        <input id="effort" type="number" min="1" max="5" value="3" />
-        <button id="triageBtn">Triage Task</button>
-      </section>
-    </section>
-
-    <section id="releaseModule" class="module-block hidden">
-      <section class="card">
-        <h2>Release Gate</h2>
-        <input id="releaseName" placeholder="Release name/version" />
-        <label><input type="checkbox" id="testsPass" /> Tests passing</label>
-        <label><input type="checkbox" id="noBlockers" /> No blocker bugs</label>
-        <label><input type="checkbox" id="docsReady" /> Docs updated</label>
-        <label><input type="checkbox" id="rollbackReady" /> Rollback plan ready</label>
-        <label><input type="checkbox" id="monitoringReady" /> Monitoring/alerts ready</label>
-        <button id="releaseBtn">Evaluate Release</button>
-      </section>
-    </section>
-
-    <section id="satisfactionModule" class="module-block hidden">
-      <section class="card">
+    <!-- ============================================================ -->
+    <!-- TAB 2: SEARCH SATISFACTION                                    -->
+    <!-- ============================================================ -->
+    <section id="tab-satisfaction" class="tab-content">
+      <div class="section-header">
         <h2>Search Satisfaction Rater</h2>
-        <label>Platform</label>
-        <select id="srPlatform">
-          <option value="tag">TAG</option>
-          <option value="tryrating">TryRating</option>
+        <p class="section-desc">Source: Centific Search Satisfaction Guidelines v2.2 &mdash; Apple Safari &amp; Spotlight. Platforms: TAG and TryRating.</p>
+      </div>
+
+      <div class="card">
+        <h3>Step 1 &mdash; Task Setup</h3>
+        <div class="row-2">
+          <div>
+            <label>Platform</label>
+            <select id="srPlatform" onchange="updateFlagWarning(); updateLiveGrade(); updateOprPreview();">
+              <option value="tag">TAG</option>
+              <option value="tryrating">TryRating</option>
+            </select>
+          </div>
+          <div>
+            <label>Result Type</label>
+            <select id="srResultType" onchange="updateLiveGrade()">
+              <option value="web">Web Result (Suggested Website)</option>
+              <option value="knowledge">Knowledge / Answer Card</option>
+              <option value="app">App</option>
+              <option value="maps">Maps</option>
+              <option value="news">News</option>
+              <option value="images">Web Images</option>
+              <option value="video">Web Video</option>
+              <option value="dictionary">Dictionary</option>
+              <option value="sports">Sports Card</option>
+              <option value="weather">Weather Card</option>
+              <option value="stocks">Stocks Card</option>
+              <option value="movie">Movies / TV / Music Card</option>
+            </select>
+          </div>
+        </div>
+        <label>Query</label>
+        <input id="srQuery" placeholder="e.g. how long do dogs stay in heat" />
+        <div class="row-2">
+          <div>
+            <label>User Locale <span class="hint-inline">(e.g. en-US, es-ES)</span></label>
+            <input id="srLocale" value="en-US" />
+          </div>
+          <div>
+            <label>Result Language <span class="hint-inline">(e.g. en, es, fr)</span></label>
+            <input id="srResultLang" value="en" onchange="updateFlagWarning()" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Step 2 &mdash; Validate Flags <span class="hint-inline">Check BEFORE rating</span></h3>
+        <label class="check-label">
+          <input type="checkbox" id="srWrongLang" onchange="updateFlagWarning(); updateLiveGrade()" />
+          <span><strong>Wrong Language</strong> &mdash; result is not in English and not in the user&rsquo;s locale language</span>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" id="srContentUnavailable" onchange="updateFlagWarning(); updateLiveGrade()" />
+          <span><strong>Content Unavailable</strong> &mdash; 404, blank page, requires login/subscription, broken link, privacy warning</span>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" id="srInappropriate" onchange="updateFlagWarning(); updateLiveGrade()" />
+          <span><strong>Inappropriate</strong> &mdash; pornography, hate speech, illegal drugs, spam/phishing, gore, pirated content</span>
+        </label>
+        <div class="flag-warning hidden" id="flagWarning"></div>
+      </div>
+
+      <div class="card">
+        <h3>Step 3 &mdash; Rate the Result</h3>
+        <label class="check-label">
+          <input type="checkbox" id="srDirectAnswer" onchange="updateLiveGrade()" />
+          <span>Result <strong>directly answers</strong> the user&rsquo;s need on-screen &mdash; no click required (knowledge card, answer shown instantly)</span>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" id="srAdviceQuery" onchange="updateLiveGrade()" />
+          <span>Query is an <strong>advice or recommendation query</strong> (recipe, how to lose weight, best restaurant, best Beatles song) &mdash; can <em>never</em> be Highly Satisfying</span>
+        </label>
+
+        <label>Degrees of Separation from query intent</label>
+        <p class="hint-sm">0 = directly answers the query &nbsp;&bull;&nbsp; 1 = one step away &nbsp;&bull;&nbsp; 2 = indirectly related &nbsp;&bull;&nbsp; 3 = unrelated or wrong</p>
+        <div class="degrees-row" id="degreesRow">
+          <button class="deg-btn active" data-deg="0" type="button">0 &mdash; Direct</button>
+          <button class="deg-btn" data-deg="1" type="button">1 &mdash; One step</button>
+          <button class="deg-btn" data-deg="2" type="button">2 &mdash; Indirect</button>
+          <button class="deg-btn" data-deg="3" type="button">3 &mdash; Unrelated</button>
+        </div>
+
+        <label>Source Quality</label>
+        <select id="srSourceQuality" onchange="updateLiveGrade()">
+          <option value="high">High &mdash; authoritative, professional, neutral (Wikipedia, BBC, gov, official site)</option>
+          <option value="medium">Medium &mdash; fan site, aggregator, less well-known source</option>
+          <option value="low">Low &mdash; spam-like, hidden agenda, hard to read, malicious behavior</option>
         </select>
-        <input id="srQuery" placeholder="Query" />
-        <input id="srLocale" placeholder="User locale language (e.g., en, es, fr)" value="en" />
-        <input id="srResultLang" placeholder="Result language (e.g., en, es, fr)" value="en" />
-        <textarea id="srResultDesc" rows="4" placeholder="Result summary and why it might satisfy intent"></textarea>
 
-        <label><input type="checkbox" id="srContentUnavailable" /> Content unavailable (broken, paywall, missing required context)</label>
-        <label><input type="checkbox" id="srInappropriate" /> Inappropriate content (adult, illegal, hate, phishing, etc.)</label>
-        <label><input type="checkbox" id="srAdviceQuery" /> Advice/recommendation query (cannot be Highly Satisfying)</label>
-        <label><input type="checkbox" id="srDirectAnswer" /> Directly answers user need with minimal effort</label>
+        <div class="grade-preview-row">
+          <span class="hint">Live grade preview:</span>
+          <span id="liveGradePreview" class="grade-preview-badge"></span>
+        </div>
+      </div>
 
-        <label>Degrees of separation from query intent (0-3)</label>
-        <input id="srDegrees" type="number" min="0" max="3" value="0" />
+      <div class="card">
+        <h3>Step 4 &mdash; OPR: Overall Preference Rating <span class="optional">(optional)</span></h3>
+        <p class="hint">Compare two result sets side by side. Key rule: if one side is empty, <strong>never</strong> choose &ldquo;About the Same&rdquo; when the other has at least one S or HS result.</p>
+        <div class="row-2">
+          <div>
+            <label>Left Side</label>
+            <select id="oprLeft" onchange="updateOprPreview()">
+              <option value="empty">Empty &mdash; no results returned</option>
+              <option value="ns">Has results &mdash; best is Not Satisfying</option>
+              <option value="ss">Has results &mdash; best is Somewhat Satisfying</option>
+              <option value="s">Has results &mdash; best is Satisfying</option>
+              <option value="hs">Has results &mdash; best is Highly Satisfying</option>
+            </select>
+          </div>
+          <div>
+            <label>Right Side</label>
+            <select id="oprRight" onchange="updateOprPreview()">
+              <option value="empty">Empty &mdash; no results returned</option>
+              <option value="ns">Has results &mdash; best is Not Satisfying</option>
+              <option value="ss">Has results &mdash; best is Somewhat Satisfying</option>
+              <option value="s">Has results &mdash; best is Satisfying</option>
+              <option value="hs">Has results &mdash; best is Highly Satisfying</option>
+            </select>
+          </div>
+        </div>
+        <div class="opr-live" id="oprPreview"></div>
+      </div>
 
-        <label>Source quality</label>
-        <select id="srSourceQuality">
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-        </select>
+      <button id="satisfactionBtn" class="btn-primary btn-full" type="button">&#10003; Rate This Result</button>
 
-        <button id="satisfactionBtn">Evaluate Satisfaction</button>
-      </section>
+      <div class="card results-card">
+        <h3>Rating</h3>
+        <div id="satisfactionResultOutput"><p class="hint muted">Fill in the form above and click Rate.</p></div>
+      </div>
     </section>
 
-    <section class="card" id="output">
-      <h2>Results</h2>
-      <pre id="resultText">Choose a module and run an action.</pre>
+    <!-- ============================================================ -->
+    <!-- TAB 3: BROAD MATCH                                            -->
+    <!-- ============================================================ -->
+    <section id="tab-broadmatch" class="tab-content">
+      <div class="section-header">
+        <h2>Broad Match Rater</h2>
+        <p class="section-desc">Source: Broad Match Guidelines &mdash; August 2024. Rate whether an advertiser keyword and its expansion are a Good, Acceptable, or Bad match.</p>
+      </div>
+
+      <div class="card">
+        <h3>Step 1 &mdash; Enter the Pair</h3>
+        <p class="hint"><strong>Keyword</strong> = the original advertiser keyword. &nbsp;<strong>Expansion</strong> = the query it was matched to (the broader term).</p>
+        <div class="row-2">
+          <div>
+            <label>Keyword</label>
+            <input id="bmKeyword" placeholder="e.g. tiktok" oninput="bmAutoDetect()" />
+          </div>
+          <div>
+            <label>Expansion</label>
+            <input id="bmExpansion" placeholder="e.g. tik tok" oninput="bmAutoDetect()" />
+          </div>
+        </div>
+        <div class="live-check" id="bmAutoCheck"></div>
+      </div>
+
+      <div class="card">
+        <h3>Step 2 &mdash; Research</h3>
+        <p class="hint">Use the App Search Links and Web Search Links in your rating tool to research both the keyword and the expansion <em>individually</em>. Understand what each one is and what users want when they search for it.</p>
+        <div class="research-tips">
+          <div class="tip good-tip">&#128269; App Search: check both keyword and expansion separately in App Store</div>
+          <div class="tip good-tip">&#127760; Web Search: look for the keyword and expansion on the web to confirm intent</div>
+          <div class="tip warn-tip">&#9888; If keyword or expansion is in another language, translate it first to understand the intent</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Step 3 &mdash; Decision Checklist</h3>
+        <p class="hint">Check <strong>every</strong> criterion that applies. Bad overrides everything &mdash; if any Bad indicator is checked, the pair is Bad regardless of Good or Acceptable checks.</p>
+
+        <div class="checklist-group">
+          <div class="group-label good-label">&#10003; GOOD &mdash; essentially the same query</div>
+          <label class="check-label bm-row" data-rating="good"><input type="checkbox" class="bm-check" /><span>Spell correction &mdash; one is a misspelling of the other (e.g. Insugram &rarr; Instagram)</span></label>
+          <label class="check-label bm-row" data-rating="good"><input type="checkbox" class="bm-check" /><span>Spacing only &mdash; same characters, space added or removed (e.g. tiktok &rarr; tik tok)</span></label>
+          <label class="check-label bm-row" data-rating="good"><input type="checkbox" class="bm-check" /><span>Reordering &mdash; same words, different order, same meaning (e.g. racing games &rarr; games racing)</span></label>
+          <label class="check-label bm-row" data-rating="good"><input type="checkbox" class="bm-check" /><span>Word addition or removal that does NOT change intent (e.g. mario kart &rarr; mario kart game)</span></label>
+          <label class="check-label bm-row" data-rating="good"><input type="checkbox" class="bm-check" /><span>Singular / Plural (e.g. game &rarr; games)</span></label>
+          <label class="check-label bm-row" data-rating="good"><input type="checkbox" class="bm-check" /><span>Abbreviation or short-form (e.g. fb &rarr; facebook, ig &rarr; instagram)</span></label>
+          <label class="check-label bm-row" data-rating="good"><input type="checkbox" class="bm-check" /><span>Official app name vs common name variant (e.g. Remo Plus &rarr; Remo)</span></label>
+          <label class="check-label bm-row" data-rating="good"><input type="checkbox" class="bm-check" /><span>Translation to or from locale language (e.g. Uberweisung &rarr; cash transfer)</span></label>
+        </div>
+
+        <div class="checklist-group">
+          <div class="group-label accept-label">&#9675; ACCEPTABLE &mdash; related, shared intent category</div>
+          <label class="check-label bm-row" data-rating="acceptable"><input type="checkbox" class="bm-check" /><span>Direct competitors &mdash; same industry, same core functionality (e.g. linkedin &rarr; indeed, disney &rarr; hulu)</span></label>
+          <label class="check-label bm-row" data-rating="acceptable"><input type="checkbox" class="bm-check" /><span>Brand term with same functionality as a Non-brand term, or vice versa (e.g. instagram &rarr; Reels, door dash &rarr; kfc)</span></label>
+          <label class="check-label bm-row" data-rating="acceptable"><input type="checkbox" class="bm-check" /><span>Non-brand terms in the same category with the same user intent (e.g. multiplayer &rarr; fortnite, savings &rarr; bitcoin)</span></label>
+          <label class="check-label bm-row" data-rating="acceptable"><input type="checkbox" class="bm-check" /><span>Look very different but research confirms they share the same meaning and intent</span></label>
+        </div>
+
+        <div class="checklist-group">
+          <div class="group-label bad-label">&#10005; BAD &mdash; different intent or different meaning</div>
+          <label class="check-label bm-row" data-rating="bad"><input type="checkbox" class="bm-check" /><span>Non-brand terms with completely different intent or different industry (e.g. adidas &rarr; espn &mdash; sportswear vs sports media)</span></label>
+          <label class="check-label bm-row" data-rating="bad"><input type="checkbox" class="bm-check" /><span>Different functionality or features despite being in the same general space (e.g. shooting games &rarr; toddler games)</span></label>
+          <label class="check-label bm-row" data-rating="bad"><input type="checkbox" class="bm-check" /><span>Brand terms from the same company but different products with different intents (e.g. kindle &rarr; alexa)</span></label>
+          <label class="check-label bm-row" data-rating="bad"><input type="checkbox" class="bm-check" /><span>They share a word but the overall meaning and user intent is completely different</span></label>
+        </div>
+
+        <div class="live-check" id="bmCheckFeedback"></div>
+        <button id="bmRateBtn" class="btn-primary" type="button">&#127919; Rate This Pair</button>
+      </div>
+
+      <div class="card">
+        <h3>Quick Reference &mdash; Examples from Guidelines</h3>
+        <div class="example-grid">
+          <div class="ex-col ex-good">
+            <div class="ex-col-header">GOOD</div>
+            <div class="ex-row">tiktok &rarr; tik tok <span class="ex-tag">Space</span></div>
+            <div class="ex-row">match.com &rarr; match com <span class="ex-tag">Space</span></div>
+            <div class="ex-row">mario kart &rarr; mario kart game <span class="ex-tag">Word add</span></div>
+            <div class="ex-row">instagram &rarr; ig <span class="ex-tag">Abbrev</span></div>
+            <div class="ex-row">Uberweisung &rarr; cash transfer <span class="ex-tag">Translation</span></div>
+            <div class="ex-row">game &rarr; games <span class="ex-tag">Plural</span></div>
+            <div class="ex-row">Banking &rarr; Bankwesen <span class="ex-tag">Translation</span></div>
+            <div class="ex-row">racing games &rarr; games racing <span class="ex-tag">Reorder</span></div>
+          </div>
+          <div class="ex-col ex-accept">
+            <div class="ex-col-header">ACCEPTABLE</div>
+            <div class="ex-row">linkedin &rarr; indeed <span class="ex-tag">Competitors</span></div>
+            <div class="ex-row">disney &rarr; hulu <span class="ex-tag">Competitors</span></div>
+            <div class="ex-row">door dash &rarr; kfc <span class="ex-tag">Brand/NonBrand</span></div>
+            <div class="ex-row">multiplayer &rarr; fortnite <span class="ex-tag">Generic/Brand</span></div>
+            <div class="ex-row">notion &rarr; microsoft word <span class="ex-tag">Competitors</span></div>
+            <div class="ex-row">instagram &rarr; photo edit <span class="ex-tag">Brand/Feature</span></div>
+            <div class="ex-row">Amazon &rarr; Shein <span class="ex-tag">Competitors</span></div>
+            <div class="ex-row">savings &rarr; bitcoin <span class="ex-tag">Same intent</span></div>
+          </div>
+          <div class="ex-col ex-bad">
+            <div class="ex-col-header">BAD</div>
+            <div class="ex-row">adidas &rarr; espn <span class="ex-tag">Diff intent</span></div>
+            <div class="ex-row">kindle &rarr; alexa <span class="ex-tag">Diff product</span></div>
+            <div class="ex-row">coinbase &rarr; amazon <span class="ex-tag">Diff genre</span></div>
+            <div class="ex-row">tinder &rarr; tiktok <span class="ex-tag">Diff intent</span></div>
+            <div class="ex-row">disneyland &rarr; hulu <span class="ex-tag">Diff intent</span></div>
+            <div class="ex-row">shooting games &rarr; toddler games <span class="ex-tag">Diff function</span></div>
+            <div class="ex-row">photo &rarr; collage maker <span class="ex-tag">Diff intent</span></div>
+            <div class="ex-row">Nike &rarr; running app <span class="ex-tag">Mismatch</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card results-card">
+        <h3>Rating</h3>
+        <div id="bmResultOutput"><p class="hint muted">Fill in the pair and checklist above, then click Rate.</p></div>
+      </div>
     </section>
+
+    <!-- ============================================================ -->
+    <!-- TAB 4: TASK TRIAGE                                            -->
+    <!-- ============================================================ -->
+    <section id="tab-triage" class="tab-content">
+      <div class="section-header">
+        <h2>Task Triage</h2>
+        <p class="section-desc">Prioritize tasks by urgency, impact, and effort to figure out what to do first.</p>
+      </div>
+      <div class="card">
+        <label>Task Title</label>
+        <input id="taskTitle" placeholder="Task title" />
+        <label>Task Details</label>
+        <textarea id="taskDesc" rows="5" placeholder="Describe the task..."></textarea>
+        <div class="row-3">
+          <div>
+            <label>Urgency (1&ndash;5)</label>
+            <input id="urgency" type="number" min="1" max="5" value="3" />
+          </div>
+          <div>
+            <label>Impact (1&ndash;5)</label>
+            <input id="impact" type="number" min="1" max="5" value="3" />
+          </div>
+          <div>
+            <label>Effort (1&ndash;5, harder = higher)</label>
+            <input id="effort" type="number" min="1" max="5" value="3" />
+          </div>
+        </div>
+        <button id="triageBtn" type="button">Triage Task</button>
+      </div>
+      <div class="card results-card">
+        <h3>Results</h3>
+        <div id="triageOutput"><p class="hint muted">Fill in the form and click Triage.</p></div>
+      </div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- TAB 5: RELEASE GATE                                           -->
+    <!-- ============================================================ -->
+    <section id="tab-release" class="tab-content">
+      <div class="section-header">
+        <h2>Release Gate</h2>
+        <p class="section-desc">Source: When to Release Tasks. Check all gates before releasing.</p>
+      </div>
+      <div class="card">
+        <label>Release Name / Version</label>
+        <input id="releaseName" placeholder="e.g. v2.1.0" />
+        <div style="margin-top:12px">
+          <label class="check-label"><input type="checkbox" id="testsPass" /><span>Tests passing</span></label>
+          <label class="check-label"><input type="checkbox" id="noBlockers" /><span>No blocker bugs</span></label>
+          <label class="check-label"><input type="checkbox" id="docsReady" /><span>Documentation updated</span></label>
+          <label class="check-label"><input type="checkbox" id="rollbackReady" /><span>Rollback plan ready</span></label>
+          <label class="check-label"><input type="checkbox" id="monitoringReady" /><span>Monitoring &amp; alerts ready</span></label>
+        </div>
+        <button id="releaseBtn" type="button">Evaluate Release</button>
+      </div>
+      <div class="card results-card">
+        <h3>Results</h3>
+        <div id="releaseOutput"><p class="hint muted">Check the gates and click Evaluate.</p></div>
+      </div>
+    </section>
+
   </main>
-
   <script src="app.js"></script>
 </body>
 </html>
