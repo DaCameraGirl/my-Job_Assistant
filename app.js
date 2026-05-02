@@ -4,6 +4,7 @@ const moduleHint = document.getElementById('moduleHint');
 const textModule = document.getElementById('textModule');
 const triageModule = document.getElementById('triageModule');
 const releaseModule = document.getElementById('releaseModule');
+const satisfactionModule = document.getElementById('satisfactionModule');
 
 const emojiRegex = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
 const stageDirRegex = /(\[[^\]]*(hour later|at the|scene|later|enters|exit|stage)[^\]]*\])|(\.{3}|…)/i;
@@ -21,10 +22,12 @@ function setModule(value) {
   textModule.classList.toggle('hidden', value !== 'text_eval');
   triageModule.classList.toggle('hidden', value !== 'task_triage');
   releaseModule.classList.toggle('hidden', value !== 'release_gate');
+  satisfactionModule.classList.toggle('hidden', value !== 'search_satisfaction');
   const names = {
     text_eval: 'Text Evaluator',
     task_triage: 'Task Triage',
     release_gate: 'Release Gate',
+    search_satisfaction: 'Search Satisfaction Rater',
   };
   moduleHint.textContent = `Active module: ${names[value]}.`;
   resultEl.textContent = `Ready: ${names[value]}`;
@@ -41,7 +44,6 @@ function detectRejectReasons(text) {
   const parsed = rawLines.map(parseSpeaker);
   if (emojiRegex.test(text)) reasons.add('Contains Emojis');
   if (stageDirRegex.test(text)) reasons.add('Conversation Could Not Happen Over Text');
-
   const participants = [...new Set(parsed.map((p) => p.speaker).filter(Boolean))];
   for (const p of parsed) {
     if (!p.speaker) continue;
@@ -50,21 +52,17 @@ function detectRejectReasons(text) {
       if (other !== p.speaker && new RegExp(`\\b${esc}\\b`, 'i').test(p.msg)) reasons.add('Includes Name of Participant');
     }
   }
-
   for (const line of rawLines) {
     const words = normalizeWords(line);
     for (let i = 1; i < words.length; i++) if (words[i] === words[i - 1] && !['that', 'it'].includes(words[i])) reasons.add('Unnecessary Repetition');
   }
-
   const lower = text.toLowerCase();
   if (offensiveWords.some((w) => lower.includes(w))) reasons.add('Offensive Language');
   if (/\b\w*([a-z])\1\1\w*\b/i.test(text)) reasons.add('Spelling Mistake');
-
   const messages = parsed.map((p) => p.msg.toLowerCase());
   const freq = {};
   for (const m of messages) freq[m] = (freq[m] || 0) + 1;
   if (Object.values(freq).some((v) => v >= 3)) reasons.add('Incoherent/Not Human');
-
   return [...reasons];
 }
 
@@ -85,7 +83,6 @@ function scoreResponse(transcript, response) {
   if (stageDirRegex.test(response)) { score -= 40; why.push('Not text-like'); }
   if (offensiveWords.some((w) => response.toLowerCase().includes(w))) { score -= 50; why.push('Offensive language'); }
   if (/\b\w*([a-z])\1\1\w*\b/i.test(response)) { score -= 25; why.push('Likely spelling error'); }
-
   const lastLine = linesOf(transcript).slice(-1)[0] || '';
   const overlap = normalizeWords(lastLine).filter((w) => normalizeWords(response).includes(w)).length;
   if (overlap === 0) { score -= 25; why.push('Weak context match'); }
@@ -100,9 +97,7 @@ function pickResponse() {
   }
   const transcript = document.getElementById('transcript').value.trim();
   const candidates = [resp1.value, resp2.value, resp3.value, resp4.value];
-  const scored = candidates
-    .map((r, i) => ({ index: i + 1, response: r, ...scoreResponse(transcript, r) }))
-    .sort((a, b) => b.score - a.score);
+  const scored = candidates.map((r, i) => ({ index: i + 1, response: r, ...scoreResponse(transcript, r) })).sort((a, b) => b.score - a.score);
   const best = scored[0];
   resultEl.textContent += `\n\nBest Response: #${best.index}\nSelected Text: ${best.response || '(empty)'}\nScore: ${best.score}`;
 }
@@ -110,9 +105,7 @@ function pickResponse() {
 function suggestMcq() {
   const options = [mcqA.value, mcqB.value, mcqC.value, mcqD.value];
   const transcriptWords = normalizeWords(transcript.value);
-  const ranked = options
-    .map((o, i) => ({ i: i + 1, o, overlap: normalizeWords(o).filter((w) => transcriptWords.includes(w)).length }))
-    .sort((a, b) => b.overlap - a.overlap);
+  const ranked = options.map((o, i) => ({ i: i + 1, o, overlap: normalizeWords(o).filter((w) => transcriptWords.includes(w)).length })).sort((a, b) => b.overlap - a.overlap);
   const best = ranked[0];
   resultEl.textContent += `\n\nMCQ Suggestion: Choice ${String.fromCharCode(64 + best.i)} - ${best.o}`;
 }
@@ -122,14 +115,12 @@ function triageTask() {
   const urgency = Math.min(5, Math.max(1, Number(document.getElementById('urgency').value) || 3));
   const impact = Math.min(5, Math.max(1, Number(document.getElementById('impact').value) || 3));
   const effort = Math.min(5, Math.max(1, Number(document.getElementById('effort').value) || 3));
-
   const priorityScore = urgency * 2 + impact * 2 - effort;
   let bucket = 'Backlog';
   if (priorityScore >= 14) bucket = 'Do Now';
   else if (priorityScore >= 10) bucket = 'Schedule This Week';
   else if (priorityScore >= 7) bucket = 'Schedule Later';
-
-  resultEl.textContent = `Task: ${title}\nPriority Score: ${priorityScore}\nBucket: ${bucket}\n\nSuggested Next Action: ${bucket === 'Do Now' ? 'Start immediately and break into subtasks.' : bucket === 'Schedule This Week' ? 'Time-box and assign owner.' : bucket === 'Schedule Later' ? 'Add dependency notes and revisit.' : 'Keep parked until urgency/impact changes.'}`;
+  resultEl.textContent = `Task: ${title}\nPriority Score: ${priorityScore}\nBucket: ${bucket}`;
 }
 
 function evaluateRelease() {
@@ -141,19 +132,59 @@ function evaluateRelease() {
     { label: 'Rollback plan ready', ok: rollbackReady.checked },
     { label: 'Monitoring/alerts ready', ok: monitoringReady.checked },
   ];
-
   const failed = checks.filter((c) => !c.ok).map((c) => c.label);
   const decision = failed.length === 0 ? 'GO' : failed.length <= 2 ? 'GO WITH RISKS' : 'NO-GO';
-
   resultEl.textContent = `Release: ${name}\nDecision: ${decision}\n${failed.length ? `Missing Gates: ${failed.join(', ')}` : 'All gates passed.'}`;
 }
 
-moduleSelect.addEventListener('change', (e) => setModule(e.target.value));
+function evaluateSatisfaction() {
+  const platform = srPlatform.value;
+  const locale = (srLocale.value || 'en').trim().toLowerCase();
+  const resultLang = (srResultLang.value || 'en').trim().toLowerCase();
+  const contentUnavailable = srContentUnavailable.checked;
+  const inappropriate = srInappropriate.checked;
+  const adviceQuery = srAdviceQuery.checked;
+  const directAnswer = srDirectAnswer.checked;
+  const sourceQuality = srSourceQuality.value;
+  const deg = Math.min(3, Math.max(0, Number(srDegrees.value) || 0));
 
+  const wrongLanguage = resultLang !== 'en' && resultLang !== locale;
+
+  const flags = [];
+  if (wrongLanguage) flags.push('Wrong Language');
+  if (contentUnavailable) flags.push('Content Unavailable');
+  if (inappropriate) flags.push('Inappropriate');
+
+  let grade = 'Highly Satisfying';
+  if (deg >= 1) grade = 'Satisfying';
+  if (deg >= 2) grade = 'Somewhat Satisfying';
+  if (deg >= 3) grade = 'Not Satisfying';
+
+  if (!directAnswer && grade === 'Highly Satisfying') grade = 'Satisfying';
+  if (adviceQuery && grade === 'Highly Satisfying') grade = 'Satisfying';
+  if (sourceQuality === 'medium' && grade === 'Highly Satisfying') grade = 'Satisfying';
+  if (sourceQuality === 'low') {
+    if (grade === 'Highly Satisfying') grade = 'Somewhat Satisfying';
+    else if (grade === 'Satisfying') grade = 'Somewhat Satisfying';
+    else if (grade === 'Somewhat Satisfying') grade = 'Not Satisfying';
+  }
+
+  if (platform === 'tryrating' && flags.length > 0) grade = 'Not Satisfying';
+
+  const action = platform === 'tag' && (wrongLanguage || inappropriate || contentUnavailable)
+    ? 'TAG: flag and submit.'
+    : platform === 'tryrating' && flags.length > 0
+      ? 'TryRating: flag, then continue to rating (Not Satisfying).'
+      : 'No blocking flag behavior triggered.';
+
+  resultEl.textContent = `Query: ${srQuery.value || '(empty)'}\nPlatform: ${platform.toUpperCase()}\nFlags: ${flags.length ? flags.join(', ') : 'None'}\nSuggested Grade: ${grade}\nAction: ${action}`;
+}
+
+moduleSelect.addEventListener('change', (e) => setModule(e.target.value));
 evalBtn.addEventListener('click', evaluateTranscript);
 pickBtn.addEventListener('click', pickResponse);
 mcqBtn.addEventListener('click', suggestMcq);
 triageBtn.addEventListener('click', triageTask);
 releaseBtn.addEventListener('click', evaluateRelease);
-
+satisfactionBtn.addEventListener('click', evaluateSatisfaction);
 setModule(moduleSelect.value);

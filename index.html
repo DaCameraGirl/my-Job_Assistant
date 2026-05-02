@@ -9,7 +9,7 @@
 <body>
   <main class="wrap">
     <h1>My Job Assistant</h1>
-    <p class="sub">Universal work assistant with interactive modules for evaluation, triage, and release decisions.</p>
+    <p class="sub">Universal work assistant with interactive modules for evaluation, triage, release decisions, and search satisfaction.</p>
 
     <section class="card">
       <h2>Module</h2>
@@ -17,6 +17,7 @@
         <option value="text_eval">Text Evaluator</option>
         <option value="task_triage">Task Triage</option>
         <option value="release_gate">Release Gate</option>
+        <option value="search_satisfaction">Search Satisfaction Rater</option>
       </select>
       <p class="hint" id="moduleHint">Active module: Text Evaluator.</p>
     </section>
@@ -73,6 +74,38 @@
         <label><input type="checkbox" id="rollbackReady" /> Rollback plan ready</label>
         <label><input type="checkbox" id="monitoringReady" /> Monitoring/alerts ready</label>
         <button id="releaseBtn">Evaluate Release</button>
+      </section>
+    </section>
+
+    <section id="satisfactionModule" class="module-block hidden">
+      <section class="card">
+        <h2>Search Satisfaction Rater</h2>
+        <label>Platform</label>
+        <select id="srPlatform">
+          <option value="tag">TAG</option>
+          <option value="tryrating">TryRating</option>
+        </select>
+        <input id="srQuery" placeholder="Query" />
+        <input id="srLocale" placeholder="User locale language (e.g., en, es, fr)" value="en" />
+        <input id="srResultLang" placeholder="Result language (e.g., en, es, fr)" value="en" />
+        <textarea id="srResultDesc" rows="4" placeholder="Result summary and why it might satisfy intent"></textarea>
+
+        <label><input type="checkbox" id="srContentUnavailable" /> Content unavailable (broken, paywall, missing required context)</label>
+        <label><input type="checkbox" id="srInappropriate" /> Inappropriate content (adult, illegal, hate, phishing, etc.)</label>
+        <label><input type="checkbox" id="srAdviceQuery" /> Advice/recommendation query (cannot be Highly Satisfying)</label>
+        <label><input type="checkbox" id="srDirectAnswer" /> Directly answers user need with minimal effort</label>
+
+        <label>Degrees of separation from query intent (0-3)</label>
+        <input id="srDegrees" type="number" min="0" max="3" value="0" />
+
+        <label>Source quality</label>
+        <select id="srSourceQuality">
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+
+        <button id="satisfactionBtn">Evaluate Satisfaction</button>
       </section>
     </section>
 
