@@ -1,6 +1,6 @@
-# Centific Text Response Evaluator
+# My Job Assistant
 
-Local web app that follows the **Text Response Evaluation (Dec 2025)** workflow:
+Local web app for work support tasks.\n\nCurrent module: **Text Response Evaluation (Dec 2025)**.\nPlanned modules: release gating, QA checklisting, and task triage.
 
 - Summarize transcript (30-word cap)
 - Decide Pass vs Reject
@@ -20,3 +20,4 @@ Local web app that follows the **Text Response Evaluation (Dec 2025)** workflow:
 - This is a rubric-driven heuristic evaluator (deterministic checks).
 - The second PDF (`When to Release Tasks.pdf`) appears image-only; OCR was unavailable in this environment, so release-specific policy hooks are not yet integrated.
 - If you share text/OCR for that PDF, I can add exact release gating logic next.
+

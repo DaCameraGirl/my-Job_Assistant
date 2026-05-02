@@ -3,13 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Text Response Evaluator</title>
+  <title>My Job Assistant</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <main class="wrap">
-    <h1>Text Response Evaluator</h1>
-    <p class="sub">Implements the Dec 2025 rubric workflow: summary, pass/reject, response selection, and MCQ check.</p>
+    <h1>My Job Assistant</h1>
+    <p class="sub">Universal work assistant. Current module: Text Response Evaluation (Dec 2025 rubric).</p>
+
+    <section class="card">
+      <h2>Module</h2>
+      <select id="moduleSelect">
+        <option value="text_eval">Text Evaluator (Active)</option>
+        <option value="task_triage">Task Triage (Coming Soon)</option>
+        <option value="release_gate">Release Gate (Coming Soon)</option>
+      </select>
+      <p class="hint" id="moduleHint">Active module: Text Evaluator.</p>
+    </section>
 
     <section class="card">
       <h2>1) Transcript</h2>
