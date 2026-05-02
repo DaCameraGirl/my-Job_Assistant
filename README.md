@@ -1,14 +1,16 @@
 # My Job Assistant
 
-Interactive local web app for work support tasks with four modules:
+Personal interactive web app for work support tasks. Five modules across two groups:
 
-- Text Evaluator: transcript pass/reject, reject reasons, best-response selection, MCQ suggestion
+**Rating Tasks**
+- Text Evaluation: transcript pass/reject, reject reasons, best-response selection, MCQ suggestion
+- Search Satisfaction: validates flags (TAG/TryRating), live grade preview, OPR comparison
+- Broad Match: keyword/expansion pair rating — Good, Acceptable, or Bad
+
+**Tools**
 - Task Triage: scores urgency/impact/effort and assigns action bucket
 - Release Gate: evaluates readiness and returns GO / GO WITH RISKS / NO-GO
-- Search Satisfaction Rater: validates flags and suggests Highly/Satisfying/Somewhat/Not based on rubric heuristics
 
 ## Run
 
-1. Open `index.html` in a browser.
-2. Select module from the top dropdown.
-3. Fill fields and run module action buttons.
+Open `index.html` in a browser. No server or install needed.
