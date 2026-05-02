@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text Response Evaluator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <h1>Text Response Evaluator</h1>
+    <p class="sub">Implements the Dec 2025 rubric workflow: summary, pass/reject, response selection, and MCQ check.</p>
+
+    <section class="card">
+      <h2>1) Transcript</h2>
+      <textarea id="transcript" rows="12" placeholder="Paste transcript lines, one message per line. Example: Person A: Hi"></textarea>
+      <button id="evalBtn">Evaluate Transcript</button>
+    </section>
+
+    <section class="card">
+      <h2>2) Candidate Responses (Optional)</h2>
+      <p class="hint">If transcript passes, app will score these and suggest the best reply to the last message.</p>
+      <input id="resp1" placeholder="Response 1" />
+      <input id="resp2" placeholder="Response 2" />
+      <input id="resp3" placeholder="Response 3" />
+      <input id="resp4" placeholder="Response 4" />
+      <button id="pickBtn">Pick Best Response</button>
+    </section>
+
+    <section class="card">
+      <h2>3) Multiple-Choice Question (Optional)</h2>
+      <input id="mcqQ" placeholder="Question about original conversation" />
+      <input id="mcqA" placeholder="Choice A" />
+      <input id="mcqB" placeholder="Choice B" />
+      <input id="mcqC" placeholder="Choice C" />
+      <input id="mcqD" placeholder="Choice D" />
+      <button id="mcqBtn">Suggest Best Answer</button>
+    </section>
+
+    <section class="card" id="output">
+      <h2>Results</h2>
+      <pre id="resultText">Run an evaluation to see output.</pre>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

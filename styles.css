@@ -1,0 +1,44 @@
+:root {
+  --bg: #f4efe8;
+  --ink: #1f2a2e;
+  --card: #fffaf3;
+  --accent: #0f766e;
+  --line: #d9ccba;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(circle at 10% 0%, #fff8ee 0%, var(--bg) 55%);
+  color: var(--ink);
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+.wrap { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+h1 { margin: 0; }
+.sub { margin: 8px 0 20px; opacity: .9; }
+.card {
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+textarea, input {
+  width: 100%;
+  margin: 6px 0;
+  padding: 10px;
+  border: 1px solid #c9b9a4;
+  border-radius: 8px;
+  font-size: 14px;
+}
+button {
+  background: var(--accent);
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+button:hover { opacity: .9; }
+pre { white-space: pre-wrap; font-size: 14px; }
+.hint { font-size: 13px; opacity: .8; }
