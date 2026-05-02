@@ -228,6 +228,37 @@
       </div>
 
       <div class="card">
+        <h3>Step 1b &mdash; Pick Best Expansion <span class="optional">(when you have multiple options)</span></h3>
+        <p class="hint">Paste up to 4 expansion candidates. The tool rates each one against your keyword and picks the best match automatically.</p>
+        <div class="expansion-row">
+          <div class="expansion-slot">
+            <label>Expansion A</label>
+            <input class="exp-input" id="expA" placeholder="Expansion option A" oninput="rateExpansions()" />
+            <div class="exp-rating" id="expRatingA"></div>
+          </div>
+          <div class="expansion-slot">
+            <label>Expansion B</label>
+            <input class="exp-input" id="expB" placeholder="Expansion option B" oninput="rateExpansions()" />
+            <div class="exp-rating" id="expRatingB"></div>
+          </div>
+          <div class="expansion-slot">
+            <label>Expansion C</label>
+            <input class="exp-input" id="expC" placeholder="Expansion option C" oninput="rateExpansions()" />
+            <div class="exp-rating" id="expRatingC"></div>
+          </div>
+          <div class="expansion-slot">
+            <label>Expansion D</label>
+            <input class="exp-input" id="expD" placeholder="Expansion option D" oninput="rateExpansions()" />
+            <div class="exp-rating" id="expRatingD"></div>
+          </div>
+        </div>
+        <div class="best-expansion-box hidden" id="bestExpansionBox">
+          <div class="best-expansion-label">Best expansion:</div>
+          <div id="bestExpansionResult"></div>
+        </div>
+      </div>
+
+      <div class="card">
         <h3>Step 2 &mdash; Research</h3>
         <p class="hint">Use the App Search Links and Web Search Links in your rating tool to research both the keyword and the expansion <em>individually</em>. Understand what each one is and what users want when they search for it.</p>
         <div class="research-tips">

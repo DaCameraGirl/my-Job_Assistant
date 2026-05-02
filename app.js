@@ -379,6 +379,95 @@ function bmAutoDetect() {
   }
 }
 
+// ---- EXPANSION PICKER ----
+function scoreExpansion(kw, exp) {
+  if (!exp.trim()) return null;
+  const k = kw.toLowerCase().trim();
+  const e = exp.toLowerCase().trim();
+
+  // Highly — essentially the same query
+  if (k === e) return { level: 'hi', label: 'Highly — identical' };
+  if (k.replace(/\s/g,'') === e.replace(/\s/g,'')) return { level: 'hi', label: 'Highly — spacing only' };
+  if (levenshtein(k, e) <= 2) return { level: 'hi', label: 'Highly — spell correction' };
+  const kSort = k.split(/\s+/).sort().join(' ');
+  const eSort = e.split(/\s+/).sort().join(' ');
+  if (kSort === eSort) return { level: 'hi', label: 'Highly — reordering' };
+  if ((k + 's') === e || (e + 's') === k) return { level: 'hi', label: 'Highly — singular/plural' };
+  const kWords = k.split(/\s+/);
+  const eWords = e.split(/\s+/);
+  if (kWords.every(w => eWords.includes(w)) || eWords.every(w => kWords.includes(w))) {
+    return { level: 'hi', label: 'Highly — word addition/removal' };
+  }
+
+  // Good — related, same category (overlap score)
+  const overlap = kWords.filter(w => eWords.includes(w) && w.length > 2).length;
+  const overlapRatio = overlap / Math.max(kWords.length, eWords.length);
+  if (overlapRatio >= 0.5) return { level: 'good', label: 'Good — shared terms' };
+
+  // Somewhat — some connection
+  if (overlapRatio > 0) return { level: 'some', label: 'Somewhat — partial overlap' };
+
+  // Not Interesting — no connection detected
+  return { level: 'none', label: 'Not Interesting — no clear connection' };
+}
+
+const rankOrder = { hi: 4, good: 3, some: 2, none: 1 };
+
+function rateExpansions() {
+  const kw = document.getElementById('bmKeyword').value.trim();
+  const slots = [
+    { id: 'expA', ratingId: 'expRatingA', letter: 'A' },
+    { id: 'expB', ratingId: 'expRatingB', letter: 'B' },
+    { id: 'expC', ratingId: 'expRatingC', letter: 'C' },
+    { id: 'expD', ratingId: 'expRatingD', letter: 'D' },
+  ];
+
+  if (!kw) {
+    slots.forEach(s => {
+      const el = document.getElementById(s.ratingId);
+      el.className = 'exp-rating';
+      el.textContent = '';
+    });
+    document.getElementById('bestExpansionBox').classList.add('hidden');
+    return;
+  }
+
+  let best = null;
+  const scored = [];
+
+  slots.forEach(s => {
+    const val = document.getElementById(s.id).value.trim();
+    const ratingEl = document.getElementById(s.ratingId);
+    if (!val) {
+      ratingEl.className = 'exp-rating';
+      ratingEl.textContent = '';
+      return;
+    }
+    const result = scoreExpansion(kw, val);
+    ratingEl.className = 'exp-rating ' + result.level;
+    ratingEl.textContent = result.label;
+    scored.push({ letter: s.letter, val, result });
+    if (!best || rankOrder[result.level] > rankOrder[best.result.level]) best = { letter: s.letter, val, result };
+  });
+
+  const box = document.getElementById('bestExpansionBox');
+  const res = document.getElementById('bestExpansionResult');
+
+  if (!best || scored.length === 0) {
+    box.classList.add('hidden');
+    return;
+  }
+
+  box.classList.remove('hidden');
+  const cls = best.result.level;
+  res.innerHTML = `<div class="result-badge ${cls === 'hi' ? 'good' : cls === 'good' ? 's' : cls === 'some' ? 'acceptable' : 'ns'}">${best.result.label}</div>`
+    + `<pre class="result-body" style="margin-top:6px">Option ${best.letter}: "${best.val}"\n\nThis is the strongest match for keyword: "${kw}"\nUse this as your expansion in the checklist below.</pre>`;
+
+  // Auto-fill the main expansion field with the winner
+  document.getElementById('bmExpansion').value = best.val;
+  bmAutoDetect();
+}
+
 // Live checklist feedback
 document.querySelectorAll('.bm-check').forEach(cb => {
   cb.addEventListener('change', () => {
