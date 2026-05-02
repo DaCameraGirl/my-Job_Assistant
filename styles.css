@@ -42,3 +42,14 @@ button {
 button:hover { opacity: .9; }
 pre { white-space: pre-wrap; font-size: 14px; }
 .hint { font-size: 13px; opacity: .8; }
+.hidden { display: none; }
+label { display: block; margin-top: 8px; font-size: 14px; }
+select {
+  width: 100%;
+  margin: 6px 0;
+  padding: 10px;
+  border: 1px solid #c9b9a4;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fff;
+}

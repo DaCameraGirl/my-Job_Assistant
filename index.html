@@ -9,47 +9,76 @@
 <body>
   <main class="wrap">
     <h1>My Job Assistant</h1>
-    <p class="sub">Universal work assistant. Current module: Text Response Evaluation (Dec 2025 rubric).</p>
+    <p class="sub">Universal work assistant with interactive modules for evaluation, triage, and release decisions.</p>
 
     <section class="card">
       <h2>Module</h2>
       <select id="moduleSelect">
-        <option value="text_eval">Text Evaluator (Active)</option>
-        <option value="task_triage">Task Triage (Coming Soon)</option>
-        <option value="release_gate">Release Gate (Coming Soon)</option>
+        <option value="text_eval">Text Evaluator</option>
+        <option value="task_triage">Task Triage</option>
+        <option value="release_gate">Release Gate</option>
       </select>
       <p class="hint" id="moduleHint">Active module: Text Evaluator.</p>
     </section>
 
-    <section class="card">
-      <h2>1) Transcript</h2>
-      <textarea id="transcript" rows="12" placeholder="Paste transcript lines, one message per line. Example: Person A: Hi"></textarea>
-      <button id="evalBtn">Evaluate Transcript</button>
+    <section id="textModule" class="module-block">
+      <section class="card">
+        <h2>1) Transcript</h2>
+        <textarea id="transcript" rows="12" placeholder="Paste transcript lines, one message per line. Example: Person A: Hi"></textarea>
+        <button id="evalBtn">Evaluate Transcript</button>
+      </section>
+
+      <section class="card">
+        <h2>2) Candidate Responses (Optional)</h2>
+        <input id="resp1" placeholder="Response 1" />
+        <input id="resp2" placeholder="Response 2" />
+        <input id="resp3" placeholder="Response 3" />
+        <input id="resp4" placeholder="Response 4" />
+        <button id="pickBtn">Pick Best Response</button>
+      </section>
+
+      <section class="card">
+        <h2>3) Multiple-Choice Question (Optional)</h2>
+        <input id="mcqQ" placeholder="Question about original conversation" />
+        <input id="mcqA" placeholder="Choice A" />
+        <input id="mcqB" placeholder="Choice B" />
+        <input id="mcqC" placeholder="Choice C" />
+        <input id="mcqD" placeholder="Choice D" />
+        <button id="mcqBtn">Suggest Best Answer</button>
+      </section>
     </section>
 
-    <section class="card">
-      <h2>2) Candidate Responses (Optional)</h2>
-      <p class="hint">If transcript passes, app will score these and suggest the best reply to the last message.</p>
-      <input id="resp1" placeholder="Response 1" />
-      <input id="resp2" placeholder="Response 2" />
-      <input id="resp3" placeholder="Response 3" />
-      <input id="resp4" placeholder="Response 4" />
-      <button id="pickBtn">Pick Best Response</button>
+    <section id="triageModule" class="module-block hidden">
+      <section class="card">
+        <h2>Task Triage</h2>
+        <input id="taskTitle" placeholder="Task title" />
+        <textarea id="taskDesc" rows="6" placeholder="Task details"></textarea>
+        <label>Urgency (1-5)</label>
+        <input id="urgency" type="number" min="1" max="5" value="3" />
+        <label>Impact (1-5)</label>
+        <input id="impact" type="number" min="1" max="5" value="3" />
+        <label>Effort (1-5, higher = harder)</label>
+        <input id="effort" type="number" min="1" max="5" value="3" />
+        <button id="triageBtn">Triage Task</button>
+      </section>
     </section>
 
-    <section class="card">
-      <h2>3) Multiple-Choice Question (Optional)</h2>
-      <input id="mcqQ" placeholder="Question about original conversation" />
-      <input id="mcqA" placeholder="Choice A" />
-      <input id="mcqB" placeholder="Choice B" />
-      <input id="mcqC" placeholder="Choice C" />
-      <input id="mcqD" placeholder="Choice D" />
-      <button id="mcqBtn">Suggest Best Answer</button>
+    <section id="releaseModule" class="module-block hidden">
+      <section class="card">
+        <h2>Release Gate</h2>
+        <input id="releaseName" placeholder="Release name/version" />
+        <label><input type="checkbox" id="testsPass" /> Tests passing</label>
+        <label><input type="checkbox" id="noBlockers" /> No blocker bugs</label>
+        <label><input type="checkbox" id="docsReady" /> Docs updated</label>
+        <label><input type="checkbox" id="rollbackReady" /> Rollback plan ready</label>
+        <label><input type="checkbox" id="monitoringReady" /> Monitoring/alerts ready</label>
+        <button id="releaseBtn">Evaluate Release</button>
+      </section>
     </section>
 
     <section class="card" id="output">
       <h2>Results</h2>
-      <pre id="resultText">Run an evaluation to see output.</pre>
+      <pre id="resultText">Choose a module and run an action.</pre>
     </section>
   </main>
 
