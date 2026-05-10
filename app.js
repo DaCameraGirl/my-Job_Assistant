@@ -30,6 +30,59 @@ function pre(text) {
   return `<pre class="result-body">${text}</pre>`;
 }
 
+function cleanClipboardText(event) {
+  const data = event.clipboardData;
+  if (!data) return null;
+
+  const html = data.getData('text/html');
+  let text = '';
+
+  if (html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll('script, style, noscript, [hidden], [aria-hidden="true"]').forEach(el => el.remove());
+    doc.querySelectorAll('*').forEach(el => {
+      const style = (el.getAttribute('style') || '').toLowerCase();
+      const classes = (el.getAttribute('class') || '').toLowerCase();
+      const hiddenStyle =
+        /display\s*:\s*none/.test(style) ||
+        /visibility\s*:\s*hidden/.test(style) ||
+        /opacity\s*:\s*0(?:\.0+)?\b/.test(style) ||
+        /color\s*:\s*transparent/.test(style) ||
+        /font-size\s*:\s*0/.test(style) ||
+        /height\s*:\s*0/.test(style) ||
+        /width\s*:\s*0/.test(style) ||
+        /position\s*:\s*absolute/.test(style) && /left\s*:\s*-\d/.test(style);
+      if (hiddenStyle || classes.includes('hidden') || classes.includes('sr-only')) el.remove();
+    });
+    text = doc.body.innerText || doc.body.textContent || '';
+  }
+
+  if (!text) text = data.getData('text/plain') || '';
+  return text
+    .replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function installPasteCleaner() {
+  document.querySelectorAll('textarea, input[type="text"], input:not([type])').forEach(el => {
+    el.addEventListener('paste', event => {
+      const cleaned = cleanClipboardText(event);
+      if (!cleaned) return;
+      event.preventDefault();
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? el.value.length;
+      el.value = el.value.slice(0, start) + cleaned + el.value.slice(end);
+      const pos = start + cleaned.length;
+      if (el.setSelectionRange) el.setSelectionRange(pos, pos);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+}
+
 function levenshtein(a, b) {
   const m = a.length, n = b.length;
   const dp = Array.from({ length: m + 1 }, (_, i) =>
@@ -206,7 +259,10 @@ function computeGrade() {
   const platform = document.getElementById('srPlatform').value;
   const direct   = document.getElementById('srDirectAnswer').checked;
   const advice   = document.getElementById('srAdviceQuery').checked;
+  const meaningMismatch = document.getElementById('srMeaningMismatch').checked;
+  const ambiguousWeak = document.getElementById('srAmbiguousWeak').checked;
   const src      = document.getElementById('srSourceQuality').value;
+  const effort   = document.getElementById('srUserEffort').value;
   const deg      = srDegrees;
 
   const flags = [];
@@ -222,12 +278,32 @@ function computeGrade() {
   let grade = 'HS';
   const reasons = [];
 
+  if (meaningMismatch) {
+    return {
+      grade: 'NS',
+      flags,
+      reasons: ['Result matches query words but does not satisfy the actual user intent']
+    };
+  }
+
   if (advice) {
     if (grade === 'HS') { grade = 'S'; reasons.push('Advice/recommendation query → cannot be Highly Satisfying'); }
+  }
+  if (ambiguousWeak && (grade === 'HS' || grade === 'S')) {
+    grade = 'SS';
+    reasons.push('Ambiguous query with only a weaker or less likely interpretation satisfied');
   }
   if (!direct && grade === 'HS') {
     grade = 'S';
     reasons.push('No direct on-screen answer → user must click or scroll');
+  }
+  if (effort === 'medium' && (grade === 'HS' || grade === 'S')) {
+    grade = 'SS';
+    reasons.push('Medium user effort required to find or use the answer');
+  }
+  if (effort === 'high') {
+    grade = 'NS';
+    reasons.push('High user effort required; result does not clearly satisfy the need');
   }
   if (src === 'medium' && grade === 'HS') {
     grade = 'S';
@@ -288,17 +364,19 @@ function updateOprPreview() {
 }
 
 // Wire up live updates
-['srDirectAnswer','srAdviceQuery','srWrongLang','srContentUnavailable','srInappropriate'].forEach(id => {
+['srDirectAnswer','srAdviceQuery','srMeaningMismatch','srAmbiguousWeak','srUserEffort','srSourceQuality','srWrongLang','srContentUnavailable','srInappropriate'].forEach(id => {
   document.getElementById(id).addEventListener('change', updateLiveGrade);
 });
 
 // Final rate button
 document.getElementById('satisfactionBtn').addEventListener('click', () => {
   const query    = document.getElementById('srQuery').value.trim();
+  const intent   = document.getElementById('srIntent').value.trim();
   const platform = document.getElementById('srPlatform').value;
   const rType    = document.getElementById('srResultType').options[document.getElementById('srResultType').selectedIndex].text;
   const { grade, flags, reasons } = computeGrade();
   const oprText  = computeOPR(document.getElementById('oprLeft').value, document.getElementById('oprRight').value);
+  const guardCount = [...document.querySelectorAll('.srGuard')].filter(cb => cb.checked).length;
 
   const gradeLabels = { HS: 'HIGHLY SATISFYING', S: 'SATISFYING', SS: 'SOMEWHAT SATISFYING', NS: 'NOT SATISFYING' };
   const gradeCls    = { HS: 'hs', S: 's', SS: 'ss', NS: 'ns' };
@@ -310,7 +388,8 @@ document.getElementById('satisfactionBtn').addEventListener('click', () => {
     return;
   }
 
-  let body = `Query: ${query || '(not entered)'}\nPlatform: ${platform.toUpperCase()}\nResult Type: ${rType}\nFlags: ${flags.length ? flags.join(', ') : 'None'}\n\nSuggested Grade: ${gradeLabels[grade]}`;
+  let body = `Query: ${query || '(not entered)'}\nUser Need: ${intent || '(not entered)'}\nPlatform: ${platform.toUpperCase()}\nResult Type: ${rType}\nFlags: ${flags.length ? flags.join(', ') : 'None'}\nGT Guardrails checked: ${guardCount}/4\n\nSuggested Grade: ${gradeLabels[grade]}`;
+  if (guardCount < 4) body += `\n\nRetest Warning: finish all four guardrail checks before copying the final answer.`;
   if (reasons.length) body += `\n\nFactors applied:\n  • ${reasons.join('\n  • ')}`;
   body += `\n\nOPR Suggestion: ${oprText}`;
 
@@ -327,6 +406,7 @@ document.getElementById('satisfactionBtn').addEventListener('click', () => {
 });
 
 // Initialize live previews
+installPasteCleaner();
 updateLiveGrade();
 updateOprPreview();
 

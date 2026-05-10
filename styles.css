@@ -204,6 +204,11 @@ button[id$="btn"]:hover { background: var(--accent-dark); }
   accent-color: var(--accent);
 }
 
+.guardrail-list {
+  display: grid;
+  gap: 7px;
+}
+
 /* ---- DEGREES BUTTONS ---- */
 .degrees-row {
   display: flex;

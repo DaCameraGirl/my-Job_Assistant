@@ -27,7 +27,7 @@
     <section id="tab-text" class="tab-content active">
       <div class="section-header">
         <h2>Text Response Evaluation</h2>
-        <p class="section-desc">Evaluate transcripts, pick the best AI response, and suggest MCQ answers.</p>
+        <p class="section-desc">Evaluate transcripts, pick the best response, and suggest MCQ answers.</p>
       </div>
 
       <div class="card">
@@ -104,6 +104,8 @@
         </div>
         <label>Query</label>
         <input id="srQuery" placeholder="e.g. how long do dogs stay in heat" />
+        <label>User Need / Intent <span class="hint-inline">(write this before rating)</span></label>
+        <textarea id="srIntent" rows="2" placeholder="What is the user actually trying to accomplish? Example: wants the duration and timing of a dog's heat cycle, not general pet care."></textarea>
         <div class="row-2">
           <div>
             <label>User Locale <span class="hint-inline">(e.g. en-US, es-ES)</span></label>
@@ -113,6 +115,17 @@
             <label>Result Language <span class="hint-inline">(e.g. en, es, fr)</span></label>
             <input id="srResultLang" value="en" onchange="updateFlagWarning()" />
           </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>GT Retest Guardrails <span class="hint-inline">Read before choosing a grade</span></h3>
+        <p class="section-desc">Paste cleaner is on: copied platform text is stripped of hidden, transparent, and zero-width clipboard content before it enters the app.</p>
+        <div class="guardrail-list">
+          <label class="check-label"><input type="checkbox" class="srGuard" /><span>I identified the user need, not just the query words.</span></label>
+          <label class="check-label"><input type="checkbox" class="srGuard" /><span>I opened/reviewed the result enough to catch unavailable, login, wrong-language, or unsafe content.</span></label>
+          <label class="check-label"><input type="checkbox" class="srGuard" /><span>I applied TAG vs TryRating flag rules before assigning satisfaction.</span></label>
+          <label class="check-label"><input type="checkbox" class="srGuard" /><span>I graded meaning, usefulness, effort, and source quality instead of matching keywords only.</span></label>
         </div>
       </div>
 
@@ -143,6 +156,14 @@
           <input type="checkbox" id="srAdviceQuery" onchange="updateLiveGrade()" />
           <span>Query is an <strong>advice or recommendation query</strong> (recipe, how to lose weight, best restaurant, best Beatles song) &mdash; can <em>never</em> be Highly Satisfying</span>
         </label>
+        <label class="check-label">
+          <input type="checkbox" id="srMeaningMismatch" onchange="updateLiveGrade()" />
+          <span>Result shares words with the query but does <strong>not</strong> satisfy the same meaning / user intent</span>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" id="srAmbiguousWeak" onchange="updateLiveGrade()" />
+          <span>Query is ambiguous and the result only satisfies a weaker or less likely interpretation</span>
+        </label>
 
         <label>Degrees of Separation from query intent</label>
         <p class="hint-sm">0 = directly answers the query &nbsp;&bull;&nbsp; 1 = one step away &nbsp;&bull;&nbsp; 2 = indirectly related &nbsp;&bull;&nbsp; 3 = unrelated or wrong</p>
@@ -158,6 +179,14 @@
           <option value="high">High &mdash; authoritative, professional, neutral (Wikipedia, BBC, gov, official site)</option>
           <option value="medium">Medium &mdash; fan site, aggregator, less well-known source</option>
           <option value="low">Low &mdash; spam-like, hidden agenda, hard to read, malicious behavior</option>
+        </select>
+
+        <label>User Effort Required</label>
+        <select id="srUserEffort" onchange="updateLiveGrade()">
+          <option value="none">None &mdash; answer/resource is immediately usable</option>
+          <option value="low">Low &mdash; one click or minor scanning</option>
+          <option value="medium">Medium &mdash; must search within page, compare, or infer</option>
+          <option value="high">High &mdash; result makes the user work hard or does not clearly answer</option>
         </select>
 
         <div class="grade-preview-row">
