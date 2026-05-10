@@ -86,7 +86,7 @@
           </div>
           <div>
             <label>Result Type</label>
-            <select id="srResultType" onchange="updateLiveGrade()">
+            <select id="srResultType" onchange="updateLiveGrade(); updateResultTypeHint()">
               <option value="web">Web Result (Suggested Website)</option>
               <option value="knowledge">Knowledge / Answer Card</option>
               <option value="app">App</option>
@@ -102,6 +102,7 @@
             </select>
           </div>
         </div>
+        <div class="flag-warning hidden" id="resultTypeHint"></div>
         <label>Query</label>
         <input id="srQuery" placeholder="e.g. how long do dogs stay in heat" />
         <label>User Need / Intent <span class="hint-inline">(write this before rating)</span></label>
@@ -162,8 +163,21 @@
         </label>
         <label class="check-label">
           <input type="checkbox" id="srAmbiguousWeak" onchange="updateLiveGrade()" />
-          <span>Query is ambiguous and the result only satisfies a weaker or less likely interpretation</span>
+          <span>Query is ambiguous and the result only satisfies a <strong>weaker or less likely</strong> secondary interpretation (dominant interpretation exists, but result serves a different one) &mdash; cap at Somewhat Satisfying</span>
         </label>
+        <label class="check-label">
+          <input type="checkbox" id="srNoDominantInterp" onchange="updateLiveGrade()" />
+          <span>Query has <strong>multiple equally popular interpretations</strong> and no single dominant one exists (e.g. &ldquo;um athletics&rdquo; = Michigan / Miami / Maryland equally) &mdash; cap HS at Satisfying</span>
+        </label>
+
+        <label>Locale sensitivity</label>
+        <select id="srLocaleSensitivity" onchange="updateLiveGrade()">
+          <option value="none">Not locale-sensitive &mdash; any locale works equally, grade normally</option>
+          <option value="mild">Mildly locale-sensitive &mdash; foreign result is slightly less useful, downgrade one level</option>
+          <option value="implicit">Implicitly locale-sensitive &mdash; query assumes nearby/local result, wrong locale shown &rarr; Not Satisfying</option>
+          <option value="explicit">Explicitly locale-sensitive &mdash; user specified a locale in query, wrong locale shown &rarr; Not Satisfying</option>
+        </select>
+        <div class="flag-warning hidden" id="localeWarning"></div>
 
         <label>Degrees of Separation from query intent</label>
         <p class="hint-sm">0 = directly answers the query &nbsp;&bull;&nbsp; 1 = one step away &nbsp;&bull;&nbsp; 2 = indirectly related &nbsp;&bull;&nbsp; 3 = unrelated or wrong</p>

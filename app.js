@@ -251,6 +251,37 @@ function updateFlagWarning() {
   }
 }
 
+// Result-type-specific hints
+function updateResultTypeHint() {
+  const rt = document.getElementById('srResultType').value;
+  const el = document.getElementById('resultTypeHint');
+  const hints = {
+    news:       'NEWS: Check the article date against the query date. If the news article is more than 3 months newer than the query date → flag as Content Unavailable.',
+    maps:       'MAPS: Required info = address + distance from user. If distance is missing → flag as Content Unavailable. Grade only on the card info shown — do not click.',
+    weather:    'WEATHER: Grade on the card only (temperature, conditions). Missing location info = Content Unavailable.',
+    sports:     'SPORTS: Grade on the card only (scores, dates). Do not click.',
+    stocks:     'STOCKS: Card must show ticker, company name, and stock price. Missing any = Content Unavailable.',
+    knowledge:  'KNOWLEDGE / ANSWER CARD: Verify the answer is factually correct. A wrong answer = Not Satisfying even from a trusted source.',
+    app:        'APPS: There may be many valid apps for a query — result doesn\'t need to be the #1 app, just a high-quality one that meets the need. Highly Satisfying requires an official or top-tier app.',
+    images:     'WEB IMAGES: If at least one image in the group is not visible → flag as Content Unavailable. Grade on whether images match query subject.',
+    movie:      'MOVIES / TV / MUSIC: Grade on the card shown. These cards are not clickable — evaluate what is visible on screen only.',
+    dictionary: 'DICTIONARY: Verify the definition is correct and matches the query word. Wrong definition = Not Satisfying.',
+  };
+  const msg = hints[rt];
+  if (msg) {
+    el.className = 'flag-warning try';
+    el.textContent = msg;
+  } else {
+    el.className = 'flag-warning hidden';
+  }
+}
+
+function downgradeOne(grade) {
+  const ladder = ['HS', 'S', 'SS', 'NS'];
+  const idx = ladder.indexOf(grade);
+  return idx < ladder.length - 1 ? ladder[idx + 1] : 'NS';
+}
+
 // Compute grade from current inputs (shared by live preview and final rate)
 function computeGrade() {
   const wl   = document.getElementById('srWrongLang').checked;
@@ -259,11 +290,13 @@ function computeGrade() {
   const platform = document.getElementById('srPlatform').value;
   const direct   = document.getElementById('srDirectAnswer').checked;
   const advice   = document.getElementById('srAdviceQuery').checked;
-  const meaningMismatch = document.getElementById('srMeaningMismatch').checked;
-  const ambiguousWeak = document.getElementById('srAmbiguousWeak').checked;
-  const src      = document.getElementById('srSourceQuality').value;
-  const effort   = document.getElementById('srUserEffort').value;
-  const deg      = srDegrees;
+  const meaningMismatch   = document.getElementById('srMeaningMismatch').checked;
+  const ambiguousWeak     = document.getElementById('srAmbiguousWeak').checked;
+  const noDominantInterp  = document.getElementById('srNoDominantInterp').checked;
+  const localeSensitivity = document.getElementById('srLocaleSensitivity').value;
+  const src    = document.getElementById('srSourceQuality').value;
+  const effort = document.getElementById('srUserEffort').value;
+  const deg    = srDegrees;
 
   const flags = [];
   if (wl)   flags.push('Wrong Language');
@@ -275,23 +308,29 @@ function computeGrade() {
   // TAG with flags => stop (no grade)
   if (platform === 'tag' && flags.length > 0) return { grade: 'FLAG', flags, reasons: [] };
 
+  // Explicit or implicit locale mismatch => NS immediately
+  if (localeSensitivity === 'explicit' || localeSensitivity === 'implicit') {
+    return { grade: 'NS', flags, reasons: [`${localeSensitivity === 'explicit' ? 'Explicit' : 'Implicit'} locale mismatch → Not Satisfying`] };
+  }
+
   let grade = 'HS';
   const reasons = [];
 
   if (meaningMismatch) {
-    return {
-      grade: 'NS',
-      flags,
-      reasons: ['Result matches query words but does not satisfy the actual user intent']
-    };
+    return { grade: 'NS', flags, reasons: ['Result matches query words but does not satisfy the actual user intent'] };
   }
 
   if (advice) {
     if (grade === 'HS') { grade = 'S'; reasons.push('Advice/recommendation query → cannot be Highly Satisfying'); }
   }
+  // No dominant interpretation: HS → S cap
+  if (noDominantInterp && grade === 'HS') {
+    grade = 'S';
+    reasons.push('No dominant interpretation among multiple equally popular ones → HS capped at Satisfying');
+  }
   if (ambiguousWeak && (grade === 'HS' || grade === 'S')) {
     grade = 'SS';
-    reasons.push('Ambiguous query with only a weaker or less likely interpretation satisfied');
+    reasons.push('Result serves only a weaker secondary interpretation → Somewhat Satisfying');
   }
   if (!direct && grade === 'HS') {
     grade = 'S';
@@ -318,6 +357,12 @@ function computeGrade() {
     if (grade === 'HS' || grade === 'S') { grade = 'SS'; reasons.push('2 degrees of separation → Somewhat Satisfying'); }
   }
   if (deg >= 3) { grade = 'NS'; reasons.push('3+ degrees of separation → Not Satisfying'); }
+
+  // Mild locale sensitivity: downgrade one level after all other factors
+  if (localeSensitivity === 'mild' && grade !== 'NS') {
+    grade = downgradeOne(grade);
+    reasons.push('Mildly locale-sensitive result → downgraded one level');
+  }
 
   return { grade, flags, reasons };
 }
