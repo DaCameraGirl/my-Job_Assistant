@@ -52,17 +52,17 @@ function detectSpellingIssues(text) {
     /\bpriviledge\b/i, /\bpublicaly\b/i, /\bwich\b/i, /\bwritting\b/i,
     /\balot\b/i, /\bbeatiful\b/i, /\bbegining\b/i, /\bcarreer\b/i,
     /\bcomming\b/i, /\bexellent\b/i, /\bforiegn\b/i, /\bgoverment\b/i,
-    /\bneccessary\b/i, /\brecomend\b/i, /\bstraight\b/i, /\btommorow\b/i,
+    /\bneccessary\b/i, /\brecomend\b/i, /\bstright\b/i, /\btommorow\b/i,
     /\bunfortunatly\b/i, /\bwierd\b/i, /\bacheive\b/i, /\bapparant\b/i,
-    /\bbattry\b/i, /\bbelieve\b/i, /\barguement\b/i, /\bchangable\b/i,
+    /\bbattry\b/i, /\bbeleive\b/i, /\barguement\b/i, /\bchangable\b/i,
     /\bconsiderd\b/i, /\bdecaffinate\b/i, /\bdiferent\b/i, /\benviroment\b/i,
     /\bFebuary\b/i, /\bforcast\b/i, /\bforword\b/i, /\bfreind\b/i,
     /\blistenning\b/i, /\bmaintainance\b/i, /\bminiture\b/i, /\bmischevious\b/i,
     /\bnoticable\b/i, /\boppertunity\b/i, /\bperfer\b/i, /\bpersonel\b/i,
-    /\bposession\b/i, /\bprefered\b/i, /\bpronounciation\b/i, /\bpublicly\b/i,
+    /\bposession\b/i, /\bprefered\b/i, /\bpronounciation\b/i, /\bpublically\b/i,
     /\breleived\b/i, /\brember\b/i, /\broomate\b/i, /\bsargeant\b/i,
-    /\bsence\b/i, /\bsupercede\b/i, /\btendancy\b/i, /\bunforeseen\b/i,
-    /\bunnecessary\b/i, /\bvetaran\b/i, /\bwithold\b/i,
+    /\bsence\b/i, /\bsupercede\b/i, /\btendancy\b/i, /\bunforseen\b/i,
+    /\bunecessary\b/i, /\bvetaran\b/i, /\bwithold\b/i,
   ];
 
   for (const pat of commonMisspellings) {
@@ -758,7 +758,7 @@ document.querySelectorAll('.bm-check').forEach(cb => {
 
     if (badAny) {
       el.className = 'live-check fail';
-      el.textContent = '\u26A0 BAD indicator checked \u2014 this pair is BAD. Bad overrides all Good and Acceptable checks.';
+      el.textContent = '\u26A0 BAD indicator checked \u2014 confirm with research before deciding. Bad overrides everything only when truly confirmed \u2014 do not mark Bad just because the pair looks different at first glance.';
     } else if (goodAny) {
       el.className = 'live-check pass';
       el.textContent = '\u2713 GOOD indicator(s) checked';
