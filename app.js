@@ -13,9 +13,69 @@ document.querySelectorAll('.tab').forEach(btn => {
 // ============================================================
 // UTILITIES
 // ============================================================
-const emojiRegex = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
-const stageDirRegex = /(\[[^\]]*(hour later|at the|scene|later|enters|exit|stage)[^\]]*\])/i;
+// FIX #5: Expanded emoji regex — added flags (U+1F1E6–U+1F1FF) and keycap sequences
+const emojiRegex = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]|[\u{1F1E6}-\u{1F1FF}]{2}|[\d#]\u{FE0F}?\u{20E3}/u;
+// FIX #4: Added ellipses scene-jump pattern (e.g. "See you there … Good morning")
+const stageDirRegex = /(\[[^\]]*(hour later|at the|scene|later|enters|exit|stage)[^\]]*\])|(\.{3,}\s+[A-Z])/i;
 const offensiveWords = ['fuck', 'shit', 'bitch', 'asshole', 'dick', 'pussy', 'cunt', 'bastard'];
+
+// FIX #2: Simple rhyme detection — checks last 2–3 characters of last words
+function lastWord(s) {
+  const words = s.trim().match(/[a-z']+/gi);
+  return words ? words[words.length - 1] : '';
+}
+function rhymesWith(a, b) {
+  if (!a || !b) return false;
+  a = a.toLowerCase().replace(/[^a-z]/g, '');
+  b = b.toLowerCase().replace(/[^a-z]/g, '');
+  if (a.length < 3 || b.length < 3) return false;
+  if (a === b) return false;
+  // Check last 3 chars
+  if (a.slice(-3) === b.slice(-3)) return true;
+  // Check last 2 chars against common rhyme endings
+  const commonEndings = new Set(['ay','ai','ea','ee','oo','ll','ff','ss','tt','ck','ng','ow','ie','oa','ui','ou','oy','oi','aw','ew','ey','ight','ite','ind','old','ell','ill','all','ain','eat','eep','uck','ock','ack','ike','ine','ame','ope','and','end','ent','ant']);
+  const s2a = a.slice(-2);
+  const s2b = b.slice(-2);
+  if (s2a === s2b && commonEndings.has(s2a)) return true;
+  return false;
+}
+
+// FIX #3: Expanded spelling detection — common misspellings and homophone misuse
+function detectSpellingIssues(text) {
+  const issues = [];
+  if (/\b\w*([a-z])\1\1\w*\b/i.test(text)) issues.push('Spelling Mistake');
+
+  const commonMisspellings = [
+    /\bthier\b/i, /\brecieve\b/i, /\bseperate\b/i, /\bdefin(?:at|it)e(?:ly|)\b/i,
+    /\baccidentaly\b/i, /\baccomodate\b/i, /\boccured\b/i, /\bcalender\b/i,
+    /\bconcious\b/i, /\bembarass\b/i, /\bocurrence\b/i, /\bparalel\b/i,
+    /\bpriviledge\b/i, /\bpublicaly\b/i, /\bwich\b/i, /\bwritting\b/i,
+    /\balot\b/i, /\bbeatiful\b/i, /\bbegining\b/i, /\bcarreer\b/i,
+    /\bcomming\b/i, /\bexellent\b/i, /\bforiegn\b/i, /\bgoverment\b/i,
+    /\bneccessary\b/i, /\brecomend\b/i, /\bstraight\b/i, /\btommorow\b/i,
+    /\bunfortunatly\b/i, /\bwierd\b/i, /\bacheive\b/i, /\bapparant\b/i,
+    /\bbattry\b/i, /\bbelieve\b/i, /\barguement\b/i, /\bchangable\b/i,
+    /\bconsiderd\b/i, /\bdecaffinate\b/i, /\bdiferent\b/i, /\benviroment\b/i,
+    /\bFebuary\b/i, /\bforcast\b/i, /\bforword\b/i, /\bfreind\b/i,
+    /\blistenning\b/i, /\bmaintainance\b/i, /\bminiture\b/i, /\bmischevious\b/i,
+    /\bnoticable\b/i, /\boppertunity\b/i, /\bperfer\b/i, /\bpersonel\b/i,
+    /\bposession\b/i, /\bprefered\b/i, /\bpronounciation\b/i, /\bpublicly\b/i,
+    /\breleived\b/i, /\brember\b/i, /\broomate\b/i, /\bsargeant\b/i,
+    /\bsence\b/i, /\bsupercede\b/i, /\btendancy\b/i, /\bunforeseen\b/i,
+    /\bunnecessary\b/i, /\bvetaran\b/i, /\bwithold\b/i,
+  ];
+
+  for (const pat of commonMisspellings) {
+    if (pat.test(text)) { issues.push('Spelling Mistake'); break; }
+  }
+
+  // Homophone misuse: "your" before a verb (your going, your coming)
+  if (/\byour\s+(going|coming|leaving|saying|doing|making|taking|giving|telling|asking|running|walking|eating|drinking|buying|selling)\b/i.test(text)) {
+    if (!issues.includes('Spelling Mistake')) issues.push('Spelling Mistake');
+  }
+
+  return issues;
+}
 
 function linesOf(text) { return text.split(/\r?\n/).map(s => s.trim()).filter(Boolean); }
 function normalizeWords(s) { return (s.toLowerCase().match(/[a-z']+/g) || []); }
@@ -123,12 +183,40 @@ function detectRejectReasons(text) {
   }
 
   if (offensiveWords.some(w => text.toLowerCase().includes(w))) reasons.add('Offensive Language');
-  if (/\b\w*([a-z])\1\1\w*\b/i.test(text)) reasons.add('Spelling Mistake');
 
+  // FIX #3: Use expanded spelling detection
+  const spellIssues = detectSpellingIssues(text);
+  if (spellIssues.length) reasons.add('Spelling Mistake');
+
+  // FIX #2: Rhyme detection — last word of one message rhymes with last word of next
+  for (let i = 0; i < parsed.length - 1; i++) {
+    const lastA = lastWord(parsed[i].msg);
+    const lastB = lastWord(parsed[i + 1].msg);
+    if (lastA && lastB && rhymesWith(lastA, lastB)) {
+      reasons.add('Messages Rhyme');
+      break;
+    }
+  }
+
+  // FIX #6: Expanded incoherent detection
   const msgs = parsed.map(p => p.msg.toLowerCase());
   const freq = {};
   for (const m of msgs) freq[m] = (freq[m] || 0) + 1;
   if (Object.values(freq).some(v => v >= 3)) reasons.add('Incoherent / Not Human');
+
+  // Address/URL dumps — lines with 3+ URLs
+  const urlDumpLines = rawLines.filter(l => (l.match(/https?:\/\/\S+/g) || []).length >= 3);
+  if (urlDumpLines.length >= 2) reasons.add('Incoherent / Not Human');
+
+  // Abrupt topic pivots — consecutive messages with zero word overlap
+  for (let i = 1; i < parsed.length; i++) {
+    const prev = normalizeWords(parsed[i - 1].msg);
+    const curr = normalizeWords(parsed[i].msg);
+    if (prev.length >= 3 && curr.length >= 3) {
+      const overlap = curr.filter(w => prev.includes(w)).length;
+      if (overlap === 0) { reasons.add('Incoherent / Not Human'); break; }
+    }
+  }
 
   return [...reasons];
 }
@@ -141,10 +229,10 @@ document.getElementById('transcript').addEventListener('input', function () {
   const reasons = detectRejectReasons(t);
   if (reasons.length === 0) {
     el.className = 'live-check pass';
-    el.textContent = '✓ No issues detected so far';
+    el.textContent = '\u2713 No issues detected so far';
   } else {
     el.className = 'live-check fail';
-    el.textContent = '⚠ Issues detected: ' + reasons.join(' · ');
+    el.textContent = '\u26A0 Issues detected: ' + reasons.join(' \u00B7 ');
   }
 });
 
@@ -156,7 +244,7 @@ function evaluateTranscript() {
   let html = badge(pass ? 'good' : 'bad', pass ? 'PASS' : 'REJECT');
   html += pre(pass
     ? 'No reject reasons found. Transcript is clean.'
-    : 'Reject Reasons:\n  • ' + reasons.join('\n  • ')
+    : 'Reject Reasons:\n  \u2022 ' + reasons.join('\n  \u2022 ')
   );
   out.innerHTML = html;
   return { pass };
@@ -168,7 +256,9 @@ function scoreResponse(transcript, response) {
   const why = [];
   if (emojiRegex.test(response))                                         { score -= 70; why.push('Contains emoji'); }
   if (offensiveWords.some(w => response.toLowerCase().includes(w)))      { score -= 50; why.push('Offensive language'); }
-  if (/\b\w*([a-z])\1\1\w*\b/i.test(response))                          { score -= 25; why.push('Likely spelling error'); }
+  const spellIssues = detectSpellingIssues(response);
+  if (spellIssues.length || /\b\w*([a-z])\1\1\w*\b/i.test(response))    { score -= 25; why.push('Likely spelling error'); }
+  if (rhymesWith(lastWord(transcript), lastWord(response)))              { score -= 10; why.push('Rhymes with transcript'); }
   const lastLine = linesOf(transcript).slice(-1)[0] || '';
   const overlap = normalizeWords(lastLine).filter(w => normalizeWords(response).includes(w)).length;
   if (overlap === 0)                                                       { score -= 25; why.push('Weak context match'); }
@@ -207,7 +297,7 @@ function suggestMcq() {
     .sort((a, b) => b.overlap - a.overlap);
   const best = ranked[0];
   const out = document.getElementById('textResultOutput');
-  out.innerHTML += pre(`\nMCQ Suggestion: Choice ${best.letter} — "${best.text}"`);
+  out.innerHTML += pre(`\nMCQ Suggestion: Choice ${best.letter} \u2014 "${best.text}"`);
 }
 
 document.getElementById('evalBtn').addEventListener('click', evaluateTranscript);
@@ -244,10 +334,10 @@ function updateFlagWarning() {
 
   if (platform === 'tag') {
     el.className = 'flag-warning tag';
-    el.textContent = `TAG: Flag as “${flags.join(', ')}” then submit. Do NOT assign a satisfaction rating.`;
+    el.textContent = `TAG: Flag as \u201c${flags.join(', ')}\u201d then submit. Do NOT assign a satisfaction rating.`;
   } else {
     el.className = 'flag-warning try';
-    el.textContent = `TryRating: Flag as “${flags.join(', ')}”, then continue to rate as Not Satisfying.`;
+    el.textContent = `TryRating: Flag as \u201c${flags.join(', ')}\u201d, then continue to rate as Not Satisfying.`;
   }
 }
 
@@ -256,15 +346,15 @@ function updateResultTypeHint() {
   const rt = document.getElementById('srResultType').value;
   const el = document.getElementById('resultTypeHint');
   const hints = {
-    news:       'NEWS: Check the article date against the query date. If the news article is more than 3 months newer than the query date → flag as Content Unavailable.',
-    maps:       'MAPS: Required info = address + distance from user. If distance is missing → flag as Content Unavailable. Grade only on the card info shown — do not click.',
+    news:       'NEWS: Check the article date against the query date. If the news article is more than 3 months newer than the query date \u2192 flag as Content Unavailable.',
+    maps:       'MAPS: Required info = address + distance from user. If distance is missing \u2192 flag as Content Unavailable. Grade only on the card info shown \u2014 do not click.',
     weather:    'WEATHER: Grade on the card only (temperature, conditions). Missing location info = Content Unavailable.',
     sports:     'SPORTS: Grade on the card only (scores, dates). Do not click.',
     stocks:     'STOCKS: Card must show ticker, company name, and stock price. Missing any = Content Unavailable.',
     knowledge:  'KNOWLEDGE / ANSWER CARD: Verify the answer is factually correct. A wrong answer = Not Satisfying even from a trusted source.',
-    app:        'APPS: There may be many valid apps for a query — result doesn\'t need to be the #1 app, just a high-quality one that meets the need. Highly Satisfying requires an official or top-tier app.',
-    images:     'WEB IMAGES: If at least one image in the group is not visible → flag as Content Unavailable. Grade on whether images match query subject.',
-    movie:      'MOVIES / TV / MUSIC: Grade on the card shown. These cards are not clickable — evaluate what is visible on screen only.',
+    app:        'APPS: There may be many valid apps for a query \u2014 result doesn\'t need to be the #1 app, just a high-quality one that meets the need. Highly Satisfying requires an official or top-tier app.',
+    images:     'WEB IMAGES: If at least one image in the group is not visible \u2192 flag as Content Unavailable. Grade on whether images match query subject.',
+    movie:      'MOVIES / TV / MUSIC: Grade on the card shown. These cards are not clickable \u2014 evaluate what is visible on screen only.',
     dictionary: 'DICTIONARY: Verify the definition is correct and matches the query word. Wrong definition = Not Satisfying.',
   };
   const msg = hints[rt];
@@ -310,7 +400,7 @@ function computeGrade() {
 
   // Explicit or implicit locale mismatch => NS immediately
   if (localeSensitivity === 'explicit' || localeSensitivity === 'implicit') {
-    return { grade: 'NS', flags, reasons: [`${localeSensitivity === 'explicit' ? 'Explicit' : 'Implicit'} locale mismatch → Not Satisfying`] };
+    return { grade: 'NS', flags, reasons: [`${localeSensitivity === 'explicit' ? 'Explicit' : 'Implicit'} locale mismatch \u2192 Not Satisfying`] };
   }
 
   let grade = 'HS';
@@ -321,20 +411,20 @@ function computeGrade() {
   }
 
   if (advice) {
-    if (grade === 'HS') { grade = 'S'; reasons.push('Advice/recommendation query → cannot be Highly Satisfying'); }
+    if (grade === 'HS') { grade = 'S'; reasons.push('Advice/recommendation query \u2192 cannot be Highly Satisfying'); }
   }
   // No dominant interpretation: HS → S cap
   if (noDominantInterp && grade === 'HS') {
     grade = 'S';
-    reasons.push('No dominant interpretation among multiple equally popular ones → HS capped at Satisfying');
+    reasons.push('No dominant interpretation among multiple equally popular ones \u2192 HS capped at Satisfying');
   }
   if (ambiguousWeak && (grade === 'HS' || grade === 'S')) {
     grade = 'SS';
-    reasons.push('Result serves only a weaker secondary interpretation → Somewhat Satisfying');
+    reasons.push('Result serves only a weaker secondary interpretation \u2192 Somewhat Satisfying');
   }
   if (!direct && grade === 'HS') {
     grade = 'S';
-    reasons.push('No direct on-screen answer → user must click or scroll');
+    reasons.push('No direct on-screen answer \u2192 user must click or scroll');
   }
   if (effort === 'medium' && (grade === 'HS' || grade === 'S')) {
     grade = 'SS';
@@ -346,22 +436,22 @@ function computeGrade() {
   }
   if (src === 'medium' && grade === 'HS') {
     grade = 'S';
-    reasons.push('Medium source quality → capped at Satisfying');
+    reasons.push('Medium source quality \u2192 capped at Satisfying');
   }
   if (src === 'low') {
-    if (grade === 'HS' || grade === 'S') { grade = 'SS'; reasons.push('Low source quality → downgraded to Somewhat Satisfying'); }
-    else if (grade === 'SS')             { grade = 'NS'; reasons.push('Low source quality on already-low result → Not Satisfying'); }
+    if (grade === 'HS' || grade === 'S') { grade = 'SS'; reasons.push('Low source quality \u2192 downgraded to Somewhat Satisfying'); }
+    else if (grade === 'SS')             { grade = 'NS'; reasons.push('Low source quality on already-low result \u2192 Not Satisfying'); }
   }
-  if (deg === 1 && grade === 'HS') { grade = 'S';  reasons.push('1 degree of separation → Satisfying'); }
+  if (deg === 1 && grade === 'HS') { grade = 'S';  reasons.push('1 degree of separation \u2192 Satisfying'); }
   if (deg === 2) {
-    if (grade === 'HS' || grade === 'S') { grade = 'SS'; reasons.push('2 degrees of separation → Somewhat Satisfying'); }
+    if (grade === 'HS' || grade === 'S') { grade = 'SS'; reasons.push('2 degrees of separation \u2192 Somewhat Satisfying'); }
   }
-  if (deg >= 3) { grade = 'NS'; reasons.push('3+ degrees of separation → Not Satisfying'); }
+  if (deg >= 3) { grade = 'NS'; reasons.push('3+ degrees of separation \u2192 Not Satisfying'); }
 
   // Mild locale sensitivity: downgrade one level after all other factors
   if (localeSensitivity === 'mild' && grade !== 'NS') {
     grade = downgradeOne(grade);
-    reasons.push('Mildly locale-sensitive result → downgraded one level');
+    reasons.push('Mildly locale-sensitive result \u2192 downgraded one level');
   }
 
   return { grade, flags, reasons };
@@ -383,23 +473,23 @@ function computeOPR(left, right) {
   const l = rank[left], r = rank[right];
 
   if (left === 'empty' && right === 'empty')
-    return 'About the Same — both sides returned no results.';
+    return 'About the Same \u2014 both sides returned no results.';
 
   if (left === 'empty') {
-    if (r >= 3) return 'Right is Better — left is empty; right has at least one S or HS result. Per guidelines: prefer the side with S/HS when the other is empty. Never choose About the Same in this case.';
-    return 'About the Same — left is empty but right has no S or HS results, so right is not meaningfully better.';
+    if (r >= 3) return 'Right is Better \u2014 left is empty; right has at least one S or HS result. Per guidelines: prefer the side with S/HS when the other is empty. Never choose About the Same in this case.';
+    return 'About the Same \u2014 left is empty but right has no S or HS results, so right is not meaningfully better.';
   }
   if (right === 'empty') {
-    if (l >= 3) return 'Left is Better — right is empty; left has at least one S or HS result.';
-    return 'About the Same — right is empty but left has no S or HS results.';
+    if (l >= 3) return 'Left is Better \u2014 right is empty; left has at least one S or HS result.';
+    return 'About the Same \u2014 right is empty but left has no S or HS results.';
   }
 
   const diff = r - l;
-  if (diff === 0)  return 'About the Same — both sides have results of similar quality.';
-  if (diff === 1)  return 'Right is Slightly Better — right has marginally better results.';
-  if (diff >= 2)   return 'Right is Better (or Much Better) — right has notably better results.';
-  if (diff === -1) return 'Left is Slightly Better — left has marginally better results.';
-  return 'Left is Better (or Much Better) — left has notably better results.';
+  if (diff === 0)  return 'About the Same \u2014 both sides have results of similar quality.';
+  if (diff === 1)  return 'Right is Slightly Better \u2014 right has marginally better results.';
+  if (diff >= 2)   return 'Right is Better (or Much Better) \u2014 right has notably better results.';
+  if (diff === -1) return 'Left is Slightly Better \u2014 left has marginally better results.';
+  return 'Left is Better (or Much Better) \u2014 left has notably better results.';
 }
 
 function updateOprPreview() {
@@ -429,23 +519,23 @@ document.getElementById('satisfactionBtn').addEventListener('click', () => {
 
   if (grade === 'FLAG') {
     out.innerHTML = badge('flag', 'FLAG & SUBMIT (TAG)')
-      + pre(`Platform: TAG\nFlags: ${flags.join(', ')}\n\nAction: Flag the result as indicated above, then submit.\nDo NOT assign a satisfaction rating — TAG stops at the flag step.`);
+      + pre(`Platform: TAG\nFlags: ${flags.join(', ')}\n\nAction: Flag the result as indicated above, then submit.\nDo NOT assign a satisfaction rating \u2014 TAG stops at the flag step.`);
     return;
   }
 
   let body = `Query: ${query || '(not entered)'}\nUser Need: ${intent || '(not entered)'}\nPlatform: ${platform.toUpperCase()}\nResult Type: ${rType}\nFlags: ${flags.length ? flags.join(', ') : 'None'}\nGT Guardrails checked: ${guardCount}/4\n\nSuggested Grade: ${gradeLabels[grade]}`;
   if (guardCount < 4) body += `\n\nRetest Warning: finish all four guardrail checks before copying the final answer.`;
-  if (reasons.length) body += `\n\nFactors applied:\n  • ${reasons.join('\n  • ')}`;
+  if (reasons.length) body += `\n\nFactors applied:\n  \u2022 ${reasons.join('\n  \u2022 ')}`;
   body += `\n\nOPR Suggestion: ${oprText}`;
 
-  // Sample written comment for OPR
+  // FIX #1: Escape apostrophe in string literal — use \u2019 (right single quotation mark) to avoid breaking the string
   const commentParts = [];
   if (!query) {
-    commentParts.push('The query intent should be considered when evaluating whether the result satisfies the user’s need.');
+    commentParts.push('The query intent should be considered when evaluating whether the result satisfies the user\u2019s need.');
   } else {
-    commentParts.push(`The user query “${query}” ${reasons.length ? 'was evaluated with the following factors applied: ' + reasons[0] + '.' : 'was evaluated against the result.'}`);
+    commentParts.push(`The user query \u201c${query}\u201d ${reasons.length ? 'was evaluated with the following factors applied: ' + reasons[0] + '.' : 'was evaluated against the result.'}`);
   }
-  body += `\n\nSample OPR Comment (≥20 words):\n"${commentParts.join(' ')} The suggested grade is ${gradeLabels[grade]}. ${oprText}"`;
+  body += `\n\nSample OPR Comment (\u226520 words):\n"${commentParts.join(' ')} The suggested grade is ${gradeLabels[grade]}. ${oprText}"`;
 
   out.innerHTML = badge(gradeCls[grade], gradeLabels[grade]) + pre(body);
 });
@@ -458,6 +548,27 @@ updateOprPreview();
 // ============================================================
 // BROAD MATCH
 // ============================================================
+// FIX #7: Expanded auto-detect with abbreviations, translations, former names, competitors
+const knownAbbrevs = {
+  'fb': 'facebook', 'ig': 'instagram', 'yt': 'youtube', 'tw': 'twitter',
+  'li': 'linkedin', 'wa': 'whatsapp', 'wp': 'wordpress', 'tk': 'tiktok',
+  'pin': 'pinterest', 'sc': 'snapchat', 'gm': 'gmail', 'gg': 'google',
+  'amz': 'amazon', 'eb': 'ebay', 'ps': 'playstation', 'xb': 'xbox',
+  'github': 'gh', 'gh': 'github',
+};
+const knownFormerNames = [
+  ['twitter', 'x'], ['google plus', 'gplus'], ['gplus', 'google plus'],
+  ['facebook', 'meta'], ['meta', 'facebook'], ['skype', 'microsoft teams'],
+];
+const knownCompetitorPairs = [
+  ['linkedin', 'indeed'], ['disney', 'hulu'], ['hulu', 'netflix'],
+  ['netflix', 'disney'], ['disney', 'netflix'], ['amazon', 'walmart'],
+  ['walmart', 'amazon'], ['doordash', 'uber eats'], ['uber eats', 'doordash'],
+  ['doordash', 'grubhub'], ['notion', 'microsoft word'], ['notion', 'google docs'],
+  ['microsoft word', 'google docs'], ['google docs', 'microsoft word'],
+  ['instagram', 'photo edit'], ['amazon', 'shein'], ['shein', 'amazon'],
+];
+
 function bmAutoDetect() {
   const kw  = document.getElementById('bmKeyword').value.trim().toLowerCase();
   const exp = document.getElementById('bmExpansion').value.trim().toLowerCase();
@@ -468,72 +579,116 @@ function bmAutoDetect() {
   const hints = [];
 
   if (kw === exp) {
-    hints.push('Identical pair — double check this is correct');
+    hints.push('Identical pair \u2014 double check this is correct');
   }
   // Space difference
   if (kw.replace(/\s/g,'') === exp.replace(/\s/g,'') && kw !== exp) {
-    hints.push('✓ Spacing difference only → likely GOOD');
+    hints.push('\u2713 Spacing difference only \u2192 likely GOOD');
   }
   // Reorder
   const kwSorted  = kw.split(/\s+/).sort().join(' ');
   const expSorted = exp.split(/\s+/).sort().join(' ');
   if (kwSorted === expSorted && kw !== exp) {
-    hints.push('✓ Same words, different order → likely GOOD (Reordering)');
+    hints.push('\u2713 Same words, different order \u2192 likely GOOD (Reordering)');
   }
   // Plural/singular
   if ((kw + 's') === exp || (exp + 's') === kw) {
-    hints.push('✓ Singular/Plural variant → likely GOOD');
+    hints.push('\u2713 Singular/Plural variant \u2192 likely GOOD');
   }
   // Short edit distance
   if (levenshtein(kw, exp) <= 2 && kw !== exp && kw.replace(/\s/g,'') !== exp.replace(/\s/g,'')) {
-    hints.push('✓ Very close spelling → possible spell correction → likely GOOD');
+    hints.push('\u2713 Very close spelling \u2192 possible spell correction \u2192 likely GOOD');
   }
   // One is prefix of other (word addition)
   const kwWords  = kw.split(/\s+/);
   const expWords = exp.split(/\s+/);
   if (kwWords.every(w => expWords.includes(w)) || expWords.every(w => kwWords.includes(w))) {
-    if (kw !== exp && kwSorted !== expSorted) hints.push('✓ One includes all words of the other → possible word addition → check intent');
+    if (kw !== exp && kwSorted !== expSorted) hints.push('\u2713 One includes all words of the other \u2192 possible word addition \u2192 check intent');
+  }
+
+  // FIX #7: Abbreviation detection
+  if (knownAbbrevs[kw] === exp || knownAbbrevs[exp] === kw) {
+    hints.push('\u2713 Known abbreviation pair \u2192 likely GOOD');
+  }
+  // FIX #7: Former name detection
+  for (const [a, b] of knownFormerNames) {
+    if ((kw === a && exp === b) || (kw === b && exp === a)) {
+      hints.push('\u2713 Former/current name pair \u2192 check intent');
+      break;
+    }
+  }
+  // FIX #7: Competitor detection
+  for (const [a, b] of knownCompetitorPairs) {
+    if ((kw === a && exp === b) || (kw === b && exp === a)) {
+      hints.push('\u25CB Known competitor pair \u2192 likely ACCEPTABLE');
+      break;
+    }
+  }
+  // FIX #7: Translation hint (language boundary detection using common non-English words)
+  // Check if one contains common English words and the other doesn't
+  const engPattern = /\b(the|a|an|is|are|was|were|have|has|had|do|does|did|will|would|can|could|may|might|shall|should|of|in|on|at|to|for|with|by|from|this|that|these|those)\b/i;
+  const kwHasEng = engPattern.test(kw);
+  const expHasEng = engPattern.test(exp);
+  if (kwHasEng !== expHasEng && kw.length > 3 && exp.length > 3) {
+    hints.push('\u25CB One side appears in English, the other may not be \u2192 possible translation \u2192 check intent');
   }
 
   if (hints.length) {
     el.className = 'live-check pass';
-    el.textContent = hints.join(' · ');
+    el.textContent = hints.join(' \u00B7 ');
   } else {
     el.className = 'live-check neutral';
-    el.textContent = 'Pair entered — use checklist below to rate.';
+    el.textContent = 'Pair entered \u2014 use checklist below to rate.';
   }
 }
 
 // ---- EXPANSION PICKER ----
+// FIX #8: More conservative overlap threshold — require 80%+ and meaningful shared words (not just short/stop words)
+const bmStopWords = new Set(['a','an','the','in','on','at','to','for','of','with','by','from','and','or','is','are','was','were','it','its','this','that','these','those','my','your','his','her','our','their','be','been','being','have','has','had','do','does','did','will','would','can','could','may','might','shall','should','about','into','through','during','before','after','above','below','between','out','off','over','under','again','then','once','here','there','when','where','why','how','all','each','every','both','few','more','most','other','some','such','no','nor','not','only','own','same','so','than','too','very','just','also','if','then','else','what','which','who','whom']);
+
 function scoreExpansion(kw, exp) {
   if (!exp.trim()) return null;
   const k = kw.toLowerCase().trim();
   const e = exp.toLowerCase().trim();
 
   // Highly — essentially the same query
-  if (k === e) return { level: 'hi', label: 'Highly — identical' };
-  if (k.replace(/\s/g,'') === e.replace(/\s/g,'')) return { level: 'hi', label: 'Highly — spacing only' };
-  if (levenshtein(k, e) <= 2) return { level: 'hi', label: 'Highly — spell correction' };
+  if (k === e) return { level: 'hi', label: 'Highly \u2014 identical' };
+  if (k.replace(/\s/g,'') === e.replace(/\s/g,'')) return { level: 'hi', label: 'Highly \u2014 spacing only' };
+  if (levenshtein(k, e) <= 2) return { level: 'hi', label: 'Highly \u2014 spell correction' };
   const kSort = k.split(/\s+/).sort().join(' ');
   const eSort = e.split(/\s+/).sort().join(' ');
-  if (kSort === eSort) return { level: 'hi', label: 'Highly — reordering' };
-  if ((k + 's') === e || (e + 's') === k) return { level: 'hi', label: 'Highly — singular/plural' };
+  if (kSort === eSort) return { level: 'hi', label: 'Highly \u2014 reordering' };
+  if ((k + 's') === e || (e + 's') === k) return { level: 'hi', label: 'Highly \u2014 singular/plural' };
   const kWords = k.split(/\s+/);
   const eWords = e.split(/\s+/);
   if (kWords.every(w => eWords.includes(w)) || eWords.every(w => kWords.includes(w))) {
-    return { level: 'hi', label: 'Highly — word addition/removal' };
+    return { level: 'hi', label: 'Highly \u2014 word addition/removal' };
+  }
+  // Known abbreviation or former name
+  if (knownAbbrevs[k] === e || knownAbbrevs[e] === k) return { level: 'hi', label: 'Highly \u2014 known abbreviation' };
+
+  // FIX #8: More conservative overlap — exclude stop words, require 80%+
+  const meaningfulK = kWords.filter(w => !bmStopWords.has(w) && w.length > 2);
+  const meaningfulE = eWords.filter(w => !bmStopWords.has(w) && w.length > 2);
+  const overlap = meaningfulK.filter(w => meaningfulE.includes(w)).length;
+  const maxLen = Math.max(meaningfulK.length, meaningfulE.length);
+  const overlapRatio = maxLen > 0 ? overlap / maxLen : 0;
+
+  if (overlapRatio >= 0.8) return { level: 'good', label: 'Good \u2014 strong term overlap' };
+  if (overlapRatio >= 0.4) return { level: 'some', label: 'Somewhat \u2014 partial term overlap' };
+  if (overlap > 0) return { level: 'some', label: 'Somewhat \u2014 weak overlap' };
+
+  // Competitor check
+  const kwStr = k;
+  const expStr = e;
+  for (const [a, b] of knownCompetitorPairs) {
+    if ((kwStr === a && expStr === b) || (kwStr === b && expStr === a)) {
+      return { level: 'some', label: 'Somewhat \u2014 known competitor pair' };
+    }
   }
 
-  // Good — related, same category (overlap score)
-  const overlap = kWords.filter(w => eWords.includes(w) && w.length > 2).length;
-  const overlapRatio = overlap / Math.max(kWords.length, eWords.length);
-  if (overlapRatio >= 0.5) return { level: 'good', label: 'Good — shared terms' };
-
-  // Somewhat — some connection
-  if (overlapRatio > 0) return { level: 'some', label: 'Somewhat — partial overlap' };
-
   // Not Interesting — no connection detected
-  return { level: 'none', label: 'Not Interesting — no clear connection' };
+  return { level: 'none', label: 'Not Interesting \u2014 no clear connection' };
 }
 
 const rankOrder = { hi: 4, good: 3, some: 2, none: 1 };
@@ -603,13 +758,13 @@ document.querySelectorAll('.bm-check').forEach(cb => {
 
     if (badAny) {
       el.className = 'live-check fail';
-      el.textContent = '⚠ BAD indicator checked — this pair is BAD. Bad overrides all Good and Acceptable checks.';
+      el.textContent = '\u26A0 BAD indicator checked \u2014 this pair is BAD. Bad overrides all Good and Acceptable checks.';
     } else if (goodAny) {
       el.className = 'live-check pass';
-      el.textContent = '✓ GOOD indicator(s) checked';
+      el.textContent = '\u2713 GOOD indicator(s) checked';
     } else if (acceptAny) {
       el.className = 'live-check warn';
-      el.textContent = '○ ACCEPTABLE indicator(s) checked';
+      el.textContent = '\u25CB ACCEPTABLE indicator(s) checked';
     } else {
       el.className = 'live-check';
       el.textContent = '';
@@ -638,17 +793,17 @@ document.getElementById('bmRateBtn').addEventListener('click', () => {
   if (badChecks.length > 0) {
     rating = 'BAD';
     cls = 'bad';
-    explanation = `BAD match.\n\nBAD indicators checked:\n  • ${badChecks.map(getLabel).join('\n  • ')}\n\nA BAD pair means the keyword and expansion do not share the same user intent or meaning. The ad expansion would not serve the same need as the original keyword.`;
+    explanation = `BAD match.\n\nBAD indicators checked:\n  \u2022 ${badChecks.map(getLabel).join('\n  \u2022 ')}\n\nA BAD pair means the keyword and expansion do not share the same user intent or meaning. The ad expansion would not serve the same need as the original keyword.`;
   } else if (goodChecks.length > 0) {
     rating = 'GOOD';
     cls = 'good';
-    explanation = `GOOD match.\n\nGOOD indicators:\n  • ${goodChecks.map(getLabel).join('\n  • ')}\n\nA GOOD pair means the keyword and expansion are essentially the same query — a spelling variant, spacing fix, reordering, abbreviation, singular/plural, app name variant, or translation.`;
+    explanation = `GOOD match.\n\nGOOD indicators:\n  \u2022 ${goodChecks.map(getLabel).join('\n  \u2022 ')}\n\nA GOOD pair means the keyword and expansion are essentially the same query \u2014 a spelling variant, spacing fix, reordering, abbreviation, singular/plural, app name variant, or translation.`;
   } else if (acceptChecks.length > 0) {
     rating = 'ACCEPTABLE';
     cls = 'acceptable';
-    explanation = `ACCEPTABLE match.\n\nACCEPTABLE indicators:\n  • ${acceptChecks.map(getLabel).join('\n  • ')}\n\nACCEPTABLE means the pair are related — direct competitors, a brand and non-brand with the same functionality, or non-brand terms in the same category — but they are not the same query.`;
+    explanation = `ACCEPTABLE match.\n\nACCEPTABLE indicators:\n  \u2022 ${acceptChecks.map(getLabel).join('\n  \u2022 ')}\n\nACCEPTABLE means the pair are related \u2014 direct competitors, a brand and non-brand with the same functionality, or non-brand terms in the same category \u2014 but they are not the same query.`;
   } else {
-    out.innerHTML = `<p class="hint warn">⚠ No checklist items were selected. Use the checklist to indicate which criteria apply, then click Rate again.</p>`;
+    out.innerHTML = `<p class="hint warn">\u26A0 No checklist items were selected. Use the checklist to indicate which criteria apply, then click Rate again.</p>`;
     return;
   }
 
@@ -673,7 +828,7 @@ document.getElementById('triageBtn').addEventListener('click', () => {
   const cls = score >= 10 ? 'good' : score >= 7 ? 'acceptable' : 'ns';
   document.getElementById('triageOutput').innerHTML =
     badge(cls, bucket) +
-    pre(`Task: ${title}\nPriority Score: ${score}\nUrgency: ${urgency} · Impact: ${impact} · Effort: ${effort}`);
+    pre(`Task: ${title}\nPriority Score: ${score}\nUrgency: ${urgency} \u00B7 Impact: ${impact} \u00B7 Effort: ${effort}`);
 });
 
 // ============================================================
@@ -695,5 +850,5 @@ document.getElementById('releaseBtn').addEventListener('click', () => {
 
   document.getElementById('releaseOutput').innerHTML =
     badge(cls, decision) +
-    pre(`Release: ${name}\n\nPassed gates (${passed.length}/5):\n  ✓ ${passed.length ? passed.join('\n  ✓ ') : '(none)'}\n\nMissing gates (${failed.length}):\n  ✗ ${failed.length ? failed.join('\n  ✗ ') : '(none — all gates passed!)'}`);
+    pre(`Release: ${name}\n\nPassed gates (${passed.length}/5):\n  \u2713 ${passed.length ? passed.join('\n  \u2713 ') : '(none)'}\n\nMissing gates (${failed.length}):\n  \u2717 ${failed.length ? failed.join('\n  \u2717 ') : '(none \u2014 all gates passed!)'}`);
 });
