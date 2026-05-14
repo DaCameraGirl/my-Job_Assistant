@@ -429,28 +429,44 @@
     </section>
 
     <!-- ============================================================ -->
-    <!-- TAB 5: RELEASE GATE                                           -->
+    <!-- TAB 5: RELEASE GATE — TryRating task release rules           -->
     <!-- ============================================================ -->
     <section id="tab-release" class="tab-content">
       <div class="section-header">
         <h2>Release Gate</h2>
-        <p class="section-desc">Check all gates before releasing a task.</p>
+        <p class="section-desc">Decide whether to release a TryRating task based on guideline rules.</p>
       </div>
       <div class="card">
-        <label>Release Name / Version</label>
-        <input id="releaseName" placeholder="e.g. v2.1.0" />
+        <label>Task Identifier</label>
+        <input id="releaseName" placeholder="e.g. Task #12345" />
+        <p class="hint" style="margin-top:12px"><strong>Do NOT release</strong> for these reasons (select any that apply):</p>
+        <div>
+          <label class="check-label"><input type="checkbox" id="releaseBreak" /><span>Taking a break</span></label>
+          <label class="check-label"><input type="checkbox" id="releaseReviewGuidelines" /><span>Need time to review guidelines</span></label>
+          <label class="check-label"><input type="checkbox" id="releaseTooHard" /><span>Task feels difficult / do not feel like rating</span></label>
+          <label class="check-label"><input type="checkbox" id="releaseOprError" /><span>OPR wrong-side error; re-check missing-side rules</span></label>
+          <label class="check-label"><input type="checkbox" id="releaseMapZoom" /><span>Map zoom works, but not as much as preferred</span></label>
+        </div>
+        <p class="hint" style="margin-top:12px"><strong>Valid release</strong> reasons (select any that apply):</p>
+        <div>
+          <label class="check-label"><input type="checkbox" id="releaseTechnical" /><span>Technical issue with the task</span></label>
+          <label class="check-label"><input type="checkbox" id="releaseNoQuery" /><span>No visible query to rate</span></label>
+          <label class="check-label"><input type="checkbox" id="releaseNoGuidelines" /><span>No inline or attached guidelines available</span></label>
+          <label class="check-label"><input type="checkbox" id="releaseMapNotLoading" /><span>Map is not loading</span></label>
+          <label class="check-label"><input type="checkbox" id="releaseInterface" /><span>Interface issue prevents rating</span></label>
+          <label class="check-label"><input type="checkbox" id="releaseErtShort" /><span>ERT is too short to rate the task</span></label>
+          <label class="check-label"><input type="checkbox" id="releaseAdult" /><span>Adult content discomfort</span></label>
+          <label class="check-label"><input type="checkbox" id="releasePoiAccess" /><span>POI international access restriction</span></label>
+        </div>
         <div style="margin-top:12px">
-          <label class="check-label"><input type="checkbox" id="testsPass" /><span>Tests passing</span></label>
-          <label class="check-label"><input type="checkbox" id="noBlockers" /><span>No blocker bugs</span></label>
-          <label class="check-label"><input type="checkbox" id="docsReady" /><span>Documentation updated</span></label>
-          <label class="check-label"><input type="checkbox" id="rollbackReady" /><span>Rollback plan ready</span></label>
-          <label class="check-label"><input type="checkbox" id="monitoringReady" /><span>Monitoring &amp; alerts ready</span></label>
+          <label>Release Comment <span class="optional">(required for release)</span></label>
+          <textarea id="releaseComment" rows="2" placeholder="Explain why you are releasing this task..."></textarea>
         </div>
         <button id="releaseBtn" type="button">Evaluate Release</button>
       </div>
       <div class="card results-card">
         <h3>Results</h3>
-        <div id="releaseOutput"><p class="hint muted">Check the gates and click Evaluate.</p></div>
+        <div id="releaseOutput"><p class="hint muted">Select reasons and click Evaluate.</p></div>
       </div>
     </section>
 

@@ -832,23 +832,52 @@ document.getElementById('triageBtn').addEventListener('click', () => {
 });
 
 // ============================================================
-// RELEASE GATE
+// RELEASE GATE — TryRating task release rules
 // ============================================================
 document.getElementById('releaseBtn').addEventListener('click', () => {
-  const name = document.getElementById('releaseName').value.trim() || 'Unnamed Release';
-  const gates = [
-    { label: 'Tests passing',        id: 'testsPass' },
-    { label: 'No blocker bugs',      id: 'noBlockers' },
-    { label: 'Documentation updated',id: 'docsReady' },
-    { label: 'Rollback plan ready',  id: 'rollbackReady' },
-    { label: 'Monitoring & alerts',  id: 'monitoringReady' },
+  const name = document.getElementById('releaseName').value.trim() || 'Unnamed Task';
+  const comment = document.getElementById('releaseComment').value.trim();
+
+  const doNotRelease = [
+    { label: 'Taking a break', id: 'releaseBreak' },
+    { label: 'Need time to review guidelines', id: 'releaseReviewGuidelines' },
+    { label: 'Task feels difficult / do not feel like rating', id: 'releaseTooHard' },
+    { label: 'OPR wrong-side error; re-check missing-side rules', id: 'releaseOprError' },
+    { label: 'Map zoom works, but not as much as preferred', id: 'releaseMapZoom' },
   ];
-  const failed  = gates.filter(g => !document.getElementById(g.id).checked).map(g => g.label);
-  const passed  = gates.filter(g =>  document.getElementById(g.id).checked).map(g => g.label);
-  const decision = failed.length === 0 ? 'GO' : failed.length <= 2 ? 'GO WITH RISKS' : 'NO-GO';
-  const cls      = failed.length === 0 ? 'good' : failed.length <= 2 ? 'acceptable' : 'bad';
+
+  const validRelease = [
+    { label: 'Technical issue with the task', id: 'releaseTechnical' },
+    { label: 'No visible query to rate', id: 'releaseNoQuery' },
+    { label: 'No inline or attached guidelines available', id: 'releaseNoGuidelines' },
+    { label: 'Map is not loading', id: 'releaseMapNotLoading' },
+    { label: 'Interface issue prevents rating', id: 'releaseInterface' },
+    { label: 'ERT is too short to rate the task', id: 'releaseErtShort' },
+    { label: 'Adult content discomfort', id: 'releaseAdult' },
+    { label: 'POI international access restriction', id: 'releasePoiAccess' },
+  ];
+
+  const blocked = doNotRelease.filter(g => document.getElementById(g.id).checked).map(g => g.label);
+  const valid = validRelease.filter(g => document.getElementById(g.id).checked).map(g => g.label);
+
+  let decision, cls, action;
+  if (blocked.length > 0) {
+    decision = 'DO NOT RELEASE';
+    cls = 'bad';
+    action = 'Continue rating if possible, or close/log out/navigate away if you are taking a break.';
+  } else if (valid.length > 0) {
+    decision = comment ? 'RELEASE ALLOWED' : 'COMMENT REQUIRED';
+    cls = comment ? 'good' : 'acceptable';
+    action = comment
+      ? 'Release the task with the comment shown below. Contact the team if the guideline says to report the issue.'
+      : 'Add a clear release comment before releasing.';
+  } else {
+    decision = 'DO NOT RELEASE YET';
+    cls = 'acceptable';
+    action = 'Select a valid release reason only if one truly applies.';
+  }
 
   document.getElementById('releaseOutput').innerHTML =
     badge(cls, decision) +
-    pre(`Release: ${name}\n\nPassed gates (${passed.length}/5):\n  \u2713 ${passed.length ? passed.join('\n  \u2713 ') : '(none)'}\n\nMissing gates (${failed.length}):\n  \u2717 ${failed.length ? failed.join('\n  \u2717 ') : '(none \u2014 all gates passed!)'}`);
+    pre(`Task: ${name}\n\nDo-not-release reasons checked:\n  ${blocked.length ? '\u2022 ' + blocked.join('\n  \u2022 ') : '(none)'}\n\nValid release reasons checked:\n  ${valid.length ? '\u2022 ' + valid.join('\n  \u2022 ') : '(none)'}\n\nComment:\n  ${comment || '(missing)'}\n\nAction:\n  ${action}`);
 });
