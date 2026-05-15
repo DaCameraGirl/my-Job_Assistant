@@ -60,8 +60,30 @@
       </div>
 
       <div class="card results-card">
-        <h3>Results</h3>
-        <div id="textResultOutput"><p class="hint muted">Fill in a transcript above and click Evaluate.</p></div>
+        <h3>Output <span class="optional">&mdash; copy each box into TryRating</span></h3>
+        <div class="output-boxes">
+          <div class="output-box">
+            <span class="output-label">Box 1 &mdash; Transcript Quality</span>
+            <div class="output-copy-row">
+              <textarea class="output-textarea" id="txtOut1" readonly placeholder="Click Evaluate Transcript above&hellip;"></textarea>
+              <button class="copy-btn" onclick="copyOut('txtOut1', this)">Copy</button>
+            </div>
+          </div>
+          <div class="output-box">
+            <span class="output-label">Box 2 &mdash; Best Response (1&ndash;4)</span>
+            <div class="output-copy-row">
+              <textarea class="output-textarea" id="txtOut2" readonly placeholder="Click Pick Best Response above&hellip;"></textarea>
+              <button class="copy-btn" onclick="copyOut('txtOut2', this)">Copy</button>
+            </div>
+          </div>
+          <div class="output-box">
+            <span class="output-label">Box 3 &mdash; MCQ Answer</span>
+            <div class="output-copy-row">
+              <textarea class="output-textarea" id="txtOut3" readonly placeholder="Click Suggest Best Answer above&hellip;"></textarea>
+              <button class="copy-btn" onclick="copyOut('txtOut3', this)">Copy</button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -240,8 +262,37 @@
       <button id="satisfactionBtn" class="btn-primary btn-full" type="button">&#10003; Rate This Result</button>
 
       <div class="card results-card">
-        <h3>Rating</h3>
-        <div id="satisfactionResultOutput"><p class="hint muted">Fill in the form above and click Rate.</p></div>
+        <h3>Output <span class="optional">&mdash; copy each box into TryRating</span></h3>
+        <div class="output-boxes">
+          <div class="output-box">
+            <span class="output-label">Box 1 &mdash; Satisfaction Grade</span>
+            <div class="output-copy-row">
+              <textarea class="output-textarea output-grade" id="srOut1" readonly placeholder="Click Rate This Result above&hellip;"></textarea>
+              <button class="copy-btn" onclick="copyOut('srOut1', this)">Copy</button>
+            </div>
+          </div>
+          <div class="output-box">
+            <span class="output-label">Box 2 &mdash; OPR Rating</span>
+            <div class="output-copy-row">
+              <textarea class="output-textarea" id="srOut2" readonly placeholder="OPR result will appear here&hellip;"></textarea>
+              <button class="copy-btn" onclick="copyOut('srOut2', this)">Copy</button>
+            </div>
+          </div>
+          <div class="output-box">
+            <span class="output-label">Box 3 &mdash; OPR Comment <span style="font-size:10px;font-weight:normal;text-transform:none;letter-spacing:0">(&ge;20 words &mdash; paste into comment field)</span></span>
+            <div class="output-copy-row">
+              <textarea class="output-textarea" id="srOut3" readonly rows="3" placeholder="Sample comment will appear here&hellip;"></textarea>
+              <button class="copy-btn" onclick="copyOut('srOut3', this)">Copy</button>
+            </div>
+          </div>
+          <div class="output-box">
+            <span class="output-label">Box 4 &mdash; Factors Applied</span>
+            <div class="output-copy-row">
+              <textarea class="output-textarea" id="srOut4" readonly rows="3" placeholder="Downgrade factors and task details will appear here&hellip;"></textarea>
+              <button class="copy-btn" onclick="copyOut('srOut4', this)">Copy</button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -388,8 +439,23 @@
       </div>
 
       <div class="card results-card">
-        <h3>Rating</h3>
-        <div id="bmResultOutput"><p class="hint muted">Fill in the pair and checklist above, then click Rate.</p></div>
+        <h3>Output <span class="optional">&mdash; copy each box into TryRating</span></h3>
+        <div class="output-boxes">
+          <div class="output-box">
+            <span class="output-label">Box 1 &mdash; Rating</span>
+            <div class="output-copy-row">
+              <textarea class="output-textarea output-grade" id="bmOut1" readonly placeholder="Click Rate This Pair above&hellip;"></textarea>
+              <button class="copy-btn" onclick="copyOut('bmOut1', this)">Copy</button>
+            </div>
+          </div>
+          <div class="output-box">
+            <span class="output-label">Box 2 &mdash; Reasoning</span>
+            <div class="output-copy-row">
+              <textarea class="output-textarea" id="bmOut2" readonly rows="4" placeholder="Reasoning will appear here&hellip;"></textarea>
+              <button class="copy-btn" onclick="copyOut('bmOut2', this)">Copy</button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 

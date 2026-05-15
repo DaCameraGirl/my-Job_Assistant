@@ -442,6 +442,60 @@ code { background: #e8e3d8; padding: 1px 5px; border-radius: 4px; font-size: 13p
 
 pre { font-family: inherit; white-space: pre-wrap; margin: 0; }
 
+/* ---- OUTPUT PASTE BOXES ---- */
+.output-boxes { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.output-box { display: flex; flex-direction: column; gap: 4px; }
+.output-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--muted);
+  margin: 0;
+  display: block;
+}
+.output-copy-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+textarea.output-textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  resize: vertical;
+  background: #f8f4ee;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  padding: 10px 12px;
+  color: var(--ink);
+  margin: 0;
+  width: auto;
+}
+textarea.output-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(15,118,110,.12); }
+textarea.output-textarea.filled { background: #fff; border-color: #a8c5bf; }
+textarea.output-grade { font-size: 16px; font-weight: 700; min-height: 52px; }
+button.copy-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin: 0;
+  line-height: 1.3;
+  transition: background .13s;
+}
+button.copy-btn:hover { background: var(--accent-dark); }
+button.copy-btn.copied { background: var(--good); }
+
 /* ---- RESPONSIVE ---- */
 @media (max-width: 640px) {
   .row-2, .row-3, .example-grid { grid-template-columns: 1fr; }

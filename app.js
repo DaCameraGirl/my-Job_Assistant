@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // TAB NAVIGATION
 // ============================================================
 document.querySelectorAll('.tab').forEach(btn => {
@@ -126,6 +126,22 @@ function cleanClipboardText(event) {
     .trim();
 }
 
+// ============================================================
+// OUTPUT BOX COPY HELPER
+// ============================================================
+function copyOut(id, btn) {
+  const el = document.getElementById(id);
+  if (!el || !el.value.trim()) return;
+  const text = el.value;
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
+    .catch(() => { try { el.select(); document.execCommand('copy'); } catch(e){} return Promise.resolve(); })
+    .then(() => {
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1600);
+    });
+}
+
 function installPasteCleaner() {
   document.querySelectorAll('textarea, input[type="text"], input:not([type])').forEach(el => {
     el.addEventListener('paste', event => {
@@ -240,13 +256,13 @@ function evaluateTranscript() {
   const t = document.getElementById('transcript').value.trim();
   const reasons = detectRejectReasons(t);
   const pass = reasons.length === 0;
-  const out = document.getElementById('textResultOutput');
-  let html = badge(pass ? 'good' : 'bad', pass ? 'PASS' : 'REJECT');
-  html += pre(pass
-    ? 'No reject reasons found. Transcript is clean.'
-    : 'Reject Reasons:\n  \u2022 ' + reasons.join('\n  \u2022 ')
-  );
-  out.innerHTML = html;
+  const box = document.getElementById('txtOut1');
+  if (box) {
+    box.value = pass
+      ? 'PASS'
+      : 'REJECT\n\u2022 ' + reasons.join('\n\u2022 ');
+    box.classList.add('filled');
+  }
   return { pass };
 }
 
@@ -267,9 +283,9 @@ function scoreResponse(transcript, response) {
 
 function pickResponse() {
   const res = evaluateTranscript();
-  const out = document.getElementById('textResultOutput');
+  const box2 = document.getElementById('txtOut2');
   if (!res.pass) {
-    out.innerHTML += pre('\nResponse Selection Skipped: transcript was rejected.');
+    if (box2) { box2.value = 'N/A — transcript rejected. Fix transcript first.'; box2.classList.add('filled'); }
     return;
   }
   const transcript = document.getElementById('transcript').value.trim();
@@ -283,12 +299,21 @@ function pickResponse() {
     .map((r, i) => ({ index: i + 1, response: r, ...scoreResponse(transcript, r) }))
     .sort((a, b) => b.score - a.score);
   const best = scored[0];
-  out.innerHTML += pre(`\nBest Response: #${best.index}\n"${best.response || '(empty)'}"\nScore: ${best.score}${best.why.length ? '\nDeductions: ' + best.why.join(', ') : ''}`);
+  if (box2) {
+    if (best.score <= -999) {
+      box2.value = 'No valid responses entered.';
+    } else {
+      box2.value = `Response ${best.index}` +
+        (best.why.length ? `\nScore: ${best.score} | Deductions: ${best.why.join(', ')}` : `\nScore: ${best.score} — clean`) +
+        (best.response ? `\n\n"${best.response}"` : '');
+    }
+    box2.classList.add('filled');
+  }
 }
 
 function suggestMcq() {
   const t = document.getElementById('transcript').value;
-  const opts = ['A','B','C','D'].map((l, i) =>
+  const opts = ['A','B','C','D'].map(l =>
     ({ letter: l, text: document.getElementById('mcq' + l).value })
   );
   const tWords = normalizeWords(t);
@@ -296,8 +321,13 @@ function suggestMcq() {
     .map(o => ({ ...o, overlap: normalizeWords(o.text).filter(w => tWords.includes(w)).length }))
     .sort((a, b) => b.overlap - a.overlap);
   const best = ranked[0];
-  const out = document.getElementById('textResultOutput');
-  out.innerHTML += pre(`\nMCQ Suggestion: Choice ${best.letter} \u2014 "${best.text}"`);
+  const box3 = document.getElementById('txtOut3');
+  if (box3) {
+    box3.value = best.text
+      ? `Choice ${best.letter}\n"${best.text}"`
+      : `Choice ${best.letter} (no text entered for this option)`;
+    box3.classList.add('filled');
+  }
 }
 
 document.getElementById('evalBtn').addEventListener('click', evaluateTranscript);
@@ -513,9 +543,12 @@ document.getElementById('satisfactionBtn').addEventListener('click', () => {
   const oprText  = computeOPR(document.getElementById('oprLeft').value, document.getElementById('oprRight').value);
   const guardCount = [...document.querySelectorAll('.srGuard')].filter(cb => cb.checked).length;
 
-  const gradeLabels = { HS: 'HIGHLY SATISFYING', S: 'SATISFYING', SS: 'SOMEWHAT SATISFYING', NS: 'NOT SATISFYING' };
-  const gradeCls    = { HS: 'hs', S: 's', SS: 'ss', NS: 'ns' };
-  const out = document.getElementById('satisfactionResultOutput');
+  const gradeLabels      = { HS: 'Highly Satisfying', S: 'Satisfying', SS: 'Somewhat Satisfying', NS: 'Not Satisfying' };
+  const gradeLabelsUpper = { HS: 'HIGHLY SATISFYING', S: 'SATISFYING', SS: 'SOMEWHAT SATISFYING', NS: 'NOT SATISFYING' };
+  const out1 = document.getElementById('srOut1');
+  const out2 = document.getElementById('srOut2');
+  const out3 = document.getElementById('srOut3');
+  const out4 = document.getElementById('srOut4');
 
   if (grade === 'FLAG') {
     out.innerHTML = badge('flag', 'FLAG & SUBMIT (TAG)')
@@ -523,21 +556,35 @@ document.getElementById('satisfactionBtn').addEventListener('click', () => {
     return;
   }
 
-  let body = `Query: ${query || '(not entered)'}\nUser Need: ${intent || '(not entered)'}\nPlatform: ${platform.toUpperCase()}\nResult Type: ${rType}\nFlags: ${flags.length ? flags.join(', ') : 'None'}\nGT Guardrails checked: ${guardCount}/4\n\nSuggested Grade: ${gradeLabels[grade]}`;
-  if (guardCount < 4) body += `\n\nRetest Warning: finish all four guardrail checks before copying the final answer.`;
-  if (reasons.length) body += `\n\nFactors applied:\n  \u2022 ${reasons.join('\n  \u2022 ')}`;
-  body += `\n\nOPR Suggestion: ${oprText}`;
+  // Box 1 — grade
+  let gradeOut = gradeLabelsUpper[grade];
+  if (flags.length) gradeOut += '\n\nFlags: ' + flags.join(', ');
+  if (guardCount < 4) gradeOut += '\n\n⚠ Only ' + guardCount + '/4 guardrails checked — finish those before submitting.';
+  if (out1) { out1.value = gradeOut; out1.classList.add('filled'); }
 
-  // FIX #1: Escape apostrophe in string literal — use \u2019 (right single quotation mark) to avoid breaking the string
+  // Box 2 — OPR decision
+  const oprDecision = oprText.split('—')[0].trim();
+  if (out2) { out2.value = oprDecision; out2.classList.add('filled'); }
+
+  // Box 3 — OPR comment (ready to paste)
   const commentParts = [];
   if (!query) {
-    commentParts.push('The query intent should be considered when evaluating whether the result satisfies the user\u2019s need.');
+    commentParts.push('The query intent should be considered when evaluating whether the result satisfies the user’s need.');
   } else {
-    commentParts.push(`The user query \u201c${query}\u201d ${reasons.length ? 'was evaluated with the following factors applied: ' + reasons[0] + '.' : 'was evaluated against the result.'}`);
+    commentParts.push('The user query “' + query + '” ' + (reasons.length ? 'was evaluated with the following factors applied: ' + reasons[0] + '.' : 'was evaluated against the result.'));
   }
-  body += `\n\nSample OPR Comment (\u226520 words):\n"${commentParts.join(' ')} The suggested grade is ${gradeLabels[grade]}. ${oprText}"`;
+  const comment = commentParts.join(' ') + ' The suggested grade is ' + gradeLabels[grade] + '. ' + oprText;
+  if (out3) { out3.value = comment; out3.classList.add('filled'); }
 
-  out.innerHTML = badge(gradeCls[grade], gradeLabels[grade]) + pre(body);
+  // Box 4 — factors + task context (reference)
+  const factorsText = reasons.length
+    ? 'Factors applied:\n• ' + reasons.join('\n• ')
+    : 'No downgrade factors — base grade is Highly Satisfying.';
+  const context = '\n\nPlatform: ' + platform.toUpperCase() + ' | Result Type: ' + rType +
+    '\nQuery: ' + (query || '(not entered)') +
+    '\nUser Need: ' + (intent || '(not entered)') +
+    '\nGuardrails: ' + guardCount + '/4';
+  if (out4) { out4.value = factorsText + context; out4.classList.add('filled'); }
 });
 
 // Initialize live previews
@@ -775,10 +822,11 @@ document.querySelectorAll('.bm-check').forEach(cb => {
 document.getElementById('bmRateBtn').addEventListener('click', () => {
   const kw  = document.getElementById('bmKeyword').value.trim();
   const exp = document.getElementById('bmExpansion').value.trim();
-  const out = document.getElementById('bmResultOutput');
+  const out1 = document.getElementById('bmOut1');
+  const out2 = document.getElementById('bmOut2');
 
   if (!kw || !exp) {
-    out.innerHTML = `<p class="hint fail">Please enter both a Keyword and an Expansion before rating.</p>`;
+    if (out1) { out1.value = '⚠ Please enter both a Keyword and an Expansion before rating.'; out1.classList.add('filled'); }
     return;
   }
 
@@ -788,26 +836,25 @@ document.getElementById('bmRateBtn').addEventListener('click', () => {
 
   const getLabel = cb => cb.closest('label').querySelector('span').textContent.trim();
 
-  let rating, cls, explanation;
+  let rating, explanation;
 
   if (badChecks.length > 0) {
     rating = 'BAD';
-    cls = 'bad';
-    explanation = `BAD match.\n\nBAD indicators checked:\n  \u2022 ${badChecks.map(getLabel).join('\n  \u2022 ')}\n\nA BAD pair means the keyword and expansion do not share the same user intent or meaning. The ad expansion would not serve the same need as the original keyword.`;
+    explanation = 'BAD match.\n\nKeyword:   ' + kw + '\nExpansion: ' + exp + '\n\nBAD indicators checked:\n  • ' + badChecks.map(getLabel).join('\n  • ') + '\n\nA BAD pair means the keyword and expansion do not share the same user intent or meaning. The ad expansion would not serve the same need as the original keyword.';
   } else if (goodChecks.length > 0) {
     rating = 'GOOD';
-    cls = 'good';
-    explanation = `GOOD match.\n\nGOOD indicators:\n  \u2022 ${goodChecks.map(getLabel).join('\n  \u2022 ')}\n\nA GOOD pair means the keyword and expansion are essentially the same query \u2014 a spelling variant, spacing fix, reordering, abbreviation, singular/plural, app name variant, or translation.`;
+    explanation = 'GOOD match.\n\nKeyword:   ' + kw + '\nExpansion: ' + exp + '\n\nGOOD indicators:\n  • ' + goodChecks.map(getLabel).join('\n  • ') + '\n\nA GOOD pair means the keyword and expansion are essentially the same query — a spelling variant, spacing fix, reordering, abbreviation, singular/plural, app name variant, or translation.';
   } else if (acceptChecks.length > 0) {
     rating = 'ACCEPTABLE';
-    cls = 'acceptable';
-    explanation = `ACCEPTABLE match.\n\nACCEPTABLE indicators:\n  \u2022 ${acceptChecks.map(getLabel).join('\n  \u2022 ')}\n\nACCEPTABLE means the pair are related \u2014 direct competitors, a brand and non-brand with the same functionality, or non-brand terms in the same category \u2014 but they are not the same query.`;
+    explanation = 'ACCEPTABLE match.\n\nKeyword:   ' + kw + '\nExpansion: ' + exp + '\n\nACCEPTABLE indicators:\n  • ' + acceptChecks.map(getLabel).join('\n  • ') + '\n\nACCEPTABLE means the pair are related — direct competitors, a brand and non-brand with the same functionality, or non-brand terms in the same category — but they are not the same query.';
   } else {
-    out.innerHTML = `<p class="hint warn">\u26A0 No checklist items were selected. Use the checklist to indicate which criteria apply, then click Rate again.</p>`;
+    if (out1) { out1.value = '⚠ No checklist items selected. Use the checklist to indicate which criteria apply, then click Rate again.'; out1.classList.add('filled'); }
+    if (out2) { out2.value = ''; out2.classList.remove('filled'); }
     return;
   }
 
-  out.innerHTML = badge(cls, rating) + pre(`Keyword:   ${kw}\nExpansion: ${exp}\n\n${explanation}`);
+  if (out1) { out1.value = rating; out1.classList.add('filled'); }
+  if (out2) { out2.value = explanation; out2.classList.add('filled'); }
 });
 
 // ============================================================
