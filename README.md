@@ -1,4 +1,4 @@
-# My Job Assistant
+# My Job Assistant 
 
 Personal interactive web app for work support tasks. Five modules across two groups:
 
